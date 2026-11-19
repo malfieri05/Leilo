@@ -1,0 +1,67 @@
+export const orderingMethods = ["Direct", "DSD", "KEHE", "UNFI"] as const;
+export type OrderingMethod = (typeof orderingMethods)[number];
+
+export const directions = ["direct", "to", "through"] as const;
+export type SalesDirection = (typeof directions)[number];
+
+export type AccountDraft = {
+  externalId: string;
+  name: string;
+  address: string | null;
+  region: string | null;
+  industryType: string | null;
+  customerType: string | null;
+  orderingMethod: string | null;
+};
+
+export type LineDraft = {
+  sku: string | null;
+  productType: string | null;
+  quantity: number | null;
+  revenue: number | null;
+};
+
+export type OrderDraft = {
+  externalId: string;
+  accountExternalId: string | null;
+  orderingMethod: OrderingMethod;
+  direction: SalesDirection;
+  shipDate: string | null;
+  revenue: number | null;
+  currency: string | null;
+  tags: string;
+  excludeFromDirect: boolean;
+  partner: string;
+  lines: LineDraft[];
+};
+
+export type ShipmentDraft = {
+  externalId: string;
+  orderExternalId: string | null;
+  status: string | null;
+  deliveredAt: string | null;
+  carrier: string | null;
+  trackingNumber: string | null;
+  relevantUntil: string | null;
+};
+
+export type RawDraft = {
+  kind: "sale" | "reference" | "category" | "shipment";
+  externalId: string | null;
+  payload: unknown;
+};
+
+export type PullResult = {
+  message: string;
+  rowCount: number;
+  skipped?: boolean;
+  accounts: AccountDraft[];
+  orders: OrderDraft[];
+  shipments: ShipmentDraft[];
+  raw: RawDraft[];
+};
+
+export type SyncState = {
+  ok: boolean;
+  message: string;
+} | null;

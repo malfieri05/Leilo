@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Brand tokens from the Leilo storefront. See docs/leilo.md. */
+:root {
+  --slate: #0f172a;
+  --slate-deep: #0b1220;
+  --cream: #fbfaf7;
+  --sand: #f4eeda;
+  --paper: #ffffff;
+  --ink: #1f2937;
+  --heading: #0f172a;
+  --muted: #64748b;
+  --line: #e5e7eb;
+  --sky: #57c3ee;
+  --gold: #f5c061;
+  --sale: #e35c5c;
+  --background: var(--cream);
+  --foreground: var(--ink);
+
+  /* Older utility names, pointed at the storefront palette. */
+  --lagoon: var(--slate);
+  --lagoon-deep: var(--slate-deep);
+  --foam: var(--cream);
+  --lime: var(--sky);
+  --mango: var(--gold);
+  --hibiscus: var(--sale);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-slate: var(--slate);
+  --color-slate-deep: var(--slate-deep);
+  --color-cream: var(--cream);
+  --color-sand: var(--sand);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-sky: var(--sky);
+  --color-gold: var(--gold);
+  --color-sale: var(--sale);
+  --color-lagoon: var(--lagoon);
+  --color-lagoon-deep: var(--lagoon-deep);
+  --color-foam: var(--foam);
+  --color-lime: var(--lime);
+  --color-mango: var(--mango);
+  --color-hibiscus: var(--hibiscus);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-manrope);
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+h1,
+h2,
+.font-display {
+  font-weight: 700;
+}
+
+::selection {
+  background: var(--sky);
+  color: var(--slate);
+}
+
+.store-map .leaflet-interactive {
+  cursor: pointer;
+}

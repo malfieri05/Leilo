@@ -1,0 +1,149 @@
+import { createSign } from "node:crypto";
+import { blankToNull, isB2bOrderId, pick, stableId } from "@/lib/sources/fields";
+import { emptyPull } from "@/lib/sources/persist";
+import type { PullResult } from "@/lib/sources/types";
+
+type ServiceAccount = { client_email: string; private_key: string };
+type SheetValues = { values?: string[][] };
+
+const SHEETS = [
+  { env: "GOOGLE_SHEET_SKU_ID", label: "SKU and price list", kind: "reference" as const },
+  { env: "GOOGLE_SHEET_LTL_ID", label: "LTL bill of lading", kind: "shipment" as const },
+  { env: "GOOGLE_SHEET_LOCATOR_ID", label: "store locator", kind: "reference" as const },
+];
+
+export async function pullGoogleSheets(): Promise<PullResult> {
+  const account = readServiceAccount();
+  const configured = SHEETS.filter((sheet) => process.env[sheet.env]?.trim());
+  if (configured.length === 0) {
+    return emptyPull(
+      "The service account is set. Add GOOGLE_SHEET_SKU_ID, GOOGLE_SHEET_LTL_ID, and GOOGLE_SHEET_LOCATOR_ID for the sheets shared to that account.",
+      true,
+    );
+  }
+
+  const token = await accessToken(account);
+  const result = emptyPull("");
+  const notes: string[] = [];
+
+  for (const sheet of configured) {
+    const id = process.env[sheet.env]?.trim() ?? "";
+    const values = await readSheet(token, id, account.client_email, sheet.label);
+    const records = rowsFromValues(values);
+    const kept = records.slice(0, 2000);
+    result.raw.push({
+      kind: sheet.kind,
+      externalId: id,
+      payload: { label: sheet.label, truncated: records.length > kept.length, rows: kept },
+    });
+
+    if (sheet.kind === "shipment") {
+      let b2b = 0;
+      for (const record of records) {
+        const orderId = pick(record, ["order", "order #", "order number", "po"]) || Object.values(record)[0] || "";
+        if (!isB2bOrderId(orderId)) continue;
+        b2b += 1;
+        result.shipments.push({
+          externalId: stableId(["ltl", orderId]),
+          orderExternalId: orderId.trim(),
+          status: "ltl",
+          deliveredAt: null,
+          carrier: blankToNull(pick(record, ["carrier", "scac"])),
+          trackingNumber: blankToNull(pick(record, ["pro", "tracking", "bol"])),
+          relevantUntil: null,
+        });
+      }
+      notes.push(
+        `${sheet.label}: ${records.length} rows, ${b2b} counted as B2B because the order id starts with B- or #B-.`,
+      );
+    } else {
+      notes.push(`${sheet.label}: ${records.length} rows stored as reference data.`);
+    }
+  }
+
+  result.rowCount = result.shipments.length + result.raw.length;
+  result.message = notes.join(" ");
+  return result;
+}
+
+function readServiceAccount(): ServiceAccount {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim() ?? "";
+  const json = raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
+  try {
+    const parsed = JSON.parse(json) as Partial<ServiceAccount>;
+    if (!parsed.client_email || !parsed.private_key) {
+      throw new Error("missing fields");
+    }
+    return {
+      client_email: parsed.client_email,
+      private_key: parsed.private_key.replace(/\\n/g, "\n"),
+    };
+  } catch {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON could not be read. Paste the service account JSON or its base64 form.");
+  }
+}
+
+async function accessToken(account: ServiceAccount) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = base64url(
+    JSON.stringify({
+      iss: account.client_email,
+      scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  let signature = "";
+  try {
+    const signer = createSign("RSA-SHA256");
+    signer.update(`${header}.${claim}`);
+    signature = signer.sign(account.private_key, "base64url");
+  } catch {
+    throw new Error("The service account private key could not be used.");
+  }
+  const assertion = `${header}.${claim}.${signature}`;
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google refused the service account (${response.status}).`);
+  const body = (await response.json()) as { access_token?: string };
+  if (!body.access_token) throw new Error("Google did not return an access token.");
+  return body.access_token;
+}
+
+async function readSheet(token: string, id: string, email: string, label: string) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent("A:Z")}`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (response.status === 403 || response.status === 404) {
+    throw new Error(
+      `${label} could not be read (${response.status}). Share the sheet with ${email}.`,
+    );
+  }
+  if (!response.ok) throw new Error(`${label} request failed (${response.status}).`);
+  const body = (await response.json()) as SheetValues;
+  return body.values ?? [];
+}
+
+function rowsFromValues(values: string[][]) {
+  if (values.length < 2) return [];
+  const headers = values[0].map((header) => String(header ?? "").trim());
+  return values.slice(1).filter((row) => row.some((cell) => String(cell ?? "").trim())).map((row) => {
+    const record: Record<string, string> = {};
+    headers.forEach((header, index) => {
+      if (!header) return;
+      record[header] = String(row[index] ?? "");
+    });
+    return record;
+  });
+}
+
+function base64url(value: string) {
+  return Buffer.from(value).toString("base64url");
+}
