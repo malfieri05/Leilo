@@ -1,7 +1,10 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
-import { accounts } from "@/lib/mock-data";
+import { listAccounts } from "@/lib/sources/accounts";
 
 export const metadata: Metadata = { title: "Accounts" };
 
@@ -10,23 +13,49 @@ export default function AccountsPage() {
     <>
       <PageHeader
         title="Accounts"
-        description="Retail, on-prem, and e-comm accounts that matter to the Head of Sales. Ready for CRM or spreadsheet import."
+        description="Companies synced from HubSpot. Ordering method and industry come from the company properties."
       />
-      <Panel title="Account book" action={`${accounts.length} records`}>
+      <Suspense fallback={<Panel title="Account book">Loading accounts.</Panel>}>
+        <AccountBook />
+      </Suspense>
+    </>
+  );
+}
+
+async function AccountBook() {
+  await connection();
+  const list = await listAccounts({ limit: 100 });
+  const showing = list.state === "ready" ? list.rows.length : 0;
+  const total = list.state === "ready" || list.state === "empty" ? list.total : 0;
+
+  return (
+    <Panel title="Account book" action={total ? `${showing} of ${total}` : "Synced"}>
+      {list.state === "error" ? <p className="text-sm text-hibiscus">{list.message}</p> : null}
+      {list.state === "no-database" ? <p className="text-sm text-muted">The database is not connected.</p> : null}
+      {list.state === "empty" ? (
+        <p className="text-sm text-muted">
+          No accounts yet.{" "}
+          <Link href="/sources" className="font-semibold text-heading underline">
+            Sync a source
+          </Link>
+          .
+        </p>
+      ) : null}
+      {list.state === "ready" ? (
         <ul className="divide-y divide-line">
-          {accounts.map((account) => (
-            <li key={account.name} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
+          {list.rows.map((account, index) => (
+            <li key={`${account.source}-${index}`} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
               <div>
                 <p className="font-medium">{account.name}</p>
                 <p className="text-sm text-muted">
-                  {account.type} · {account.status} · {account.owner}
+                  {account.customerType ?? "No type"} · {account.region ?? "No region"} · {account.source}
                 </p>
               </div>
-              <p className="text-sm">{account.cases.toLocaleString()} cases MTD</p>
+              <p className="text-sm">{account.orderingMethod ?? account.industryType ?? "—"}</p>
             </li>
           ))}
         </ul>
-      </Panel>
-    </>
+      ) : null}
+    </Panel>
   );
 }

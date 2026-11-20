@@ -13,13 +13,11 @@ function isActive(pathname: string, href: string) {
 function NavLink({
   href,
   label,
-  hint,
   active,
   onNavigate,
 }: {
   href: string;
   label: string;
-  hint: string;
   active: boolean;
   onNavigate: () => void;
 }) {
@@ -27,15 +25,12 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`rounded-[10px] px-3 py-2 transition-colors ${
-        active ? "bg-white/10 text-lime" : "text-paper/80 hover:bg-white/5 hover:text-paper"
+      className={`block rounded-[10px] px-3 py-2.5 text-xs font-semibold uppercase leading-snug tracking-[0.06em] transition-colors ${
+        active ? "bg-white/10 text-lime" : "text-paper/85 hover:bg-white/5 hover:text-paper"
       }`}
       aria-current={active ? "page" : undefined}
     >
-      <span className="block text-xs font-semibold uppercase leading-snug tracking-[0.08em]">
-        {label}
-      </span>
-      <span className="block text-xs text-paper/50">{hint}</span>
+      {label}
     </Link>
   );
 }
@@ -84,7 +79,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {primaryNav.map((item) => (
               <NavLink
                 key={item.href}
-                {...item}
+                href={item.href}
+                label={item.label}
                 active={isActive(pathname, item.href)}
                 onNavigate={() => setOpen(false)}
               />
@@ -133,7 +129,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {workspaceNav.map((item) => (
                     <NavLink
                       key={item.href}
-                      {...item}
+                      href={item.href}
+                      label={item.label}
                       active={isActive(pathname, item.href)}
                       onNavigate={() => setOpen(false)}
                     />

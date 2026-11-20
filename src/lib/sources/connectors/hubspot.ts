@@ -90,7 +90,7 @@ async function listObjects(token: string, object: string, properties: string[]) 
   let after: string | null = null;
   let activeProperties = properties;
 
-  for (let page = 0; page < 10; page += 1) {
+  for (let page = 0; page < 200; page += 1) {
     const url = new URL(`https://api.hubapi.com/crm/v3/objects/${object}`);
     url.searchParams.set("limit", "100");
     url.searchParams.set("properties", activeProperties.join(","));

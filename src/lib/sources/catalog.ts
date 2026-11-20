@@ -19,7 +19,7 @@ export const sourceCatalog: SourceSpec[] = [
   {
     source: "hubspot",
     name: "HubSpot",
-    method: "Private app token. Industry Type is the industry_type property",
+    method: "Service key. Industry Type is the industry_type property",
     kind: "api",
     env: ["HUBSPOT_ACCESS_TOKEN"],
   },
