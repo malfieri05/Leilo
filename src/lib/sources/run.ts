@@ -6,6 +6,8 @@ import { pullShipStation } from "@/lib/sources/connectors/shipstation";
 import { pullShopify } from "@/lib/sources/connectors/shopify";
 import { pullSpins } from "@/lib/sources/connectors/spins";
 import { draftsFromFile, parseDelimited } from "@/lib/sources/files";
+import { parseKeheSalesFile } from "@/lib/sources/kehe/parse-sales-through";
+import { parseKeheStockStatus } from "@/lib/sources/kehe/parse-stock-status";
 import { persistBundle } from "@/lib/sources/persist";
 import type { PullResult, SyncState } from "@/lib/sources/types";
 
@@ -51,6 +53,7 @@ export async function importSourceFile(input: {
   partner: string;
   filename: string;
   text: string;
+  reportKind?: string;
 }): Promise<SyncState> {
   const spec = specFor(input.source);
   if (!spec || spec.kind === "api") {
@@ -72,6 +75,15 @@ export async function importSourceFile(input: {
   }
 
   const partner = input.partner.trim().slice(0, 80);
+  if (input.source === "kehe") {
+    const kind = input.reportKind === "stock-status" ? "stock-status" : "sales-through";
+    if (!input.reportKind) {
+      return { ok: false, message: "Choose a KEHE report type before importing." };
+    }
+    return execute(input.source, kind, spec.method, async () =>
+      kind === "stock-status" ? parseKeheStockStatus(input.text) : parseKeheSalesFile(input.text),
+    );
+  }
   return execute(input.source, partner, spec.method, async () => draftsFromFile(input.source, partner, rows));
 }
 

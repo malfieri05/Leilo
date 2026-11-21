@@ -56,7 +56,7 @@ async function Prospects() {
             </thead>
             <tbody>
               {list.rows.map((account) => (
-                <tr key={account.name} className="border-t border-line">
+                <tr key={`${account.source}-${account.externalId}`} className="border-t border-line">
                   <td className="py-3 font-medium">{account.name}</td>
                   <td className="py-3">{account.region ?? "—"}</td>
                   <td className="py-3">{account.industryType ?? "—"}</td>

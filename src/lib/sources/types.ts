@@ -1,4 +1,4 @@
-export const orderingMethods = ["Direct", "DSD", "KEHE", "UNFI"] as const;
+export const orderingMethods = ["Direct", "DSD", "KEHE", "UNFI", "Unclassified"] as const;
 export type OrderingMethod = (typeof orderingMethods)[number];
 
 export const directions = ["direct", "to", "through"] as const;
@@ -19,6 +19,23 @@ export type LineDraft = {
   productType: string | null;
   quantity: number | null;
   revenue: number | null;
+  casesOrdered?: number | null;
+  casesShipped?: number | null;
+};
+
+export type KeheInventoryDraft = {
+  dcCode: string;
+  dcName: string;
+  rowKind: "sku" | "subtotal";
+  upc: string;
+  sku: string | null;
+  description: string | null;
+  qtyOnHand: number | null;
+  qtyOnPo: number | null;
+  weeksOnHand: number | null;
+  weeksOnPo: number | null;
+  qtyOnSalesOrder: number | null;
+  vendorCasePack: number | null;
 };
 
 export type OrderDraft = {
@@ -59,6 +76,7 @@ export type PullResult = {
   orders: OrderDraft[];
   shipments: ShipmentDraft[];
   raw: RawDraft[];
+  inventory?: KeheInventoryDraft[];
 };
 
 export type SyncState = {

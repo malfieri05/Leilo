@@ -31,8 +31,10 @@ export async function importFileAction(_prev: SyncState, formData: FormData): Pr
     partner,
     filename: file.name,
     text,
+    reportKind: String(formData.get("reportKind") ?? ""),
   });
   revalidatePath("/sources");
   revalidatePath("/");
+  revalidatePath("/kehe");
   return result;
 }

@@ -1,6 +1,7 @@
 import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError } from "@/lib/db";
 
 export type AccountRow = {
+  externalId: string;
   name: string;
   customerType: string | null;
   orderingMethod: string | null;
@@ -99,7 +100,7 @@ export async function listAccounts(input: ListInput = {}): Promise<AccountList> 
     const [countRows, rows] = await Promise.all([
       sql.query(`SELECT COUNT(*)::int AS count FROM accounts ${filter.clause}`, filter.params),
       sql.query(
-        `SELECT name, customer_type, ordering_method, industry_type, region, source
+        `SELECT external_id, name, customer_type, ordering_method, industry_type, region, source
          FROM accounts ${filter.clause}
          ORDER BY name
          LIMIT $${filter.params.length + 1}
@@ -113,6 +114,7 @@ export async function listAccounts(input: ListInput = {}): Promise<AccountList> 
       state: "ready",
       total,
       rows: asRows(rows).map((row) => ({
+        externalId: String(row.external_id),
         name: String(row.name),
         customerType: blank(row.customer_type),
         orderingMethod: blank(row.ordering_method),

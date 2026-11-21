@@ -43,8 +43,8 @@ async function AccountBook() {
       ) : null}
       {list.state === "ready" ? (
         <ul className="divide-y divide-line">
-          {list.rows.map((account, index) => (
-            <li key={`${account.source}-${index}`} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
+          {list.rows.map((account) => (
+            <li key={`${account.source}-${account.externalId}`} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
               <div>
                 <p className="font-medium">{account.name}</p>
                 <p className="text-sm text-muted">

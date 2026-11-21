@@ -30,7 +30,7 @@ Every sales label should start with the ordering method, for example “Direct T
 | System | What he uses it for |
 | --- | --- |
 | HubSpot | Company properties and orders. Customer Type, Industry Type, and Ordering Method live here. Direct sales are read from HubSpot orders. DSD results should be written back here. |
-| Shopify | Direct orders, plus distributor orders that must be excluded. Sample, POS, and merch tags matter for tracking. |
+| Shopify | Direct orders, plus distributor orders that must be excluded. Sample, POS, and merch tags matter for tracking. The dashboard reads wholesale orders only through the Dev Dashboard app Leilo ARK System on `leilosupply`; the other Dev Dashboard apps are out of scope and are not used. |
 | KEHE Connect | Fill rate and stock status. Reports he named: “Chains and Stores that ordered an Item” and “Stock Status Report,” supplier and brand set to Leilo. He wants this daily, or weekly at minimum, and he wants shipped revenue. |
 | UNFI | Not turned on. Same shape as KEHE when it is. |
 | SPINS | Monthly category data in 4-, 12-, 24-, and 52-week windows. |

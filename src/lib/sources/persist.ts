@@ -2,6 +2,7 @@ import type { Sql } from "@/lib/db";
 import { chunk } from "@/lib/sources/fields";
 import type {
   AccountDraft,
+  KeheInventoryDraft,
   OrderDraft,
   PullResult,
   RawDraft,
@@ -13,6 +14,7 @@ type Stored = {
   orders: OrderDraft[];
   shipments: ShipmentDraft[];
   raw: RawDraft[];
+  inventory?: KeheInventoryDraft[];
 };
 
 export async function persistBundle(
@@ -38,6 +40,7 @@ export async function persistBundle(
   );
   await replaceLines(sql, orders, orderIds);
   await upsertShipments(sql, input.organizationId, input.source, shipments);
+  await insertInventory(sql, input.organizationId, input.syncRunId, input.bundle.inventory ?? []);
   await insertRaw(sql, input, input.bundle.raw);
 }
 
@@ -166,14 +169,23 @@ async function replaceLines(sql: Sql, orders: OrderDraft[], orderIds: Map<string
   for (const group of chunk(lines, 80)) {
     const params: unknown[] = [];
     const values = group.map((line, index) => {
-      const base = index * 5;
-      params.push(line.orderId, line.sku, line.productType, line.quantity, line.revenue);
+      const base = index * 7;
+      params.push(
+        line.orderId,
+        line.sku,
+        line.productType,
+        line.quantity,
+        line.revenue,
+        line.casesOrdered ?? null,
+        line.casesShipped ?? null,
+      );
       const slot = (offset: number) => `$${base + offset}`;
-      return `(${slot(1)}, ${slot(2)}, ${slot(3)}, ${slot(4)}, ${slot(5)})`;
+      return `(${slot(1)}, ${slot(2)}, ${slot(3)}, ${slot(4)}, ${slot(5)}, ${slot(6)}, ${slot(7)})`;
     });
     await sql.query(
-      `INSERT INTO order_lines (order_id, sku, product_type, quantity, revenue)
-       VALUES ${values.join(", ")}`,
+      `INSERT INTO order_lines (
+        order_id, sku, product_type, quantity, revenue, cases_ordered, cases_shipped
+      ) VALUES ${values.join(", ")}`,
       params,
     );
   }
@@ -217,6 +229,45 @@ async function upsertShipments(
         tracking_number = EXCLUDED.tracking_number,
         relevant_until = EXCLUDED.relevant_until,
         updated_at = now()`,
+      params,
+    );
+  }
+}
+
+async function insertInventory(
+  sql: Sql,
+  organizationId: string,
+  syncRunId: string,
+  rows: KeheInventoryDraft[],
+) {
+  for (const group of chunk(rows, 40)) {
+    const params: unknown[] = [];
+    const values = group.map((row, index) => {
+      const base = index * 14;
+      params.push(
+        organizationId,
+        syncRunId,
+        row.dcCode,
+        row.dcName,
+        row.rowKind,
+        row.upc,
+        row.sku,
+        row.description,
+        row.qtyOnHand,
+        row.qtyOnPo,
+        row.weeksOnHand,
+        row.weeksOnPo,
+        row.qtyOnSalesOrder,
+        row.vendorCasePack,
+      );
+      const slot = (offset: number) => `$${base + offset}`;
+      return `(${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((n) => slot(n)).join(", ")})`;
+    });
+    await sql.query(
+      `INSERT INTO kehe_inventory_snapshots (
+        organization_id, sync_run_id, dc_code, dc_name, row_kind, upc, sku, description,
+        qty_on_hand, qty_on_po, weeks_on_hand, weeks_on_po, qty_on_sales_order, vendor_case_pack
+      ) VALUES ${values.join(", ")}`,
       params,
     );
   }

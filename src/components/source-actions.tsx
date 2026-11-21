@@ -61,6 +61,16 @@ export function ImportForm({ sources }: { sources: { source: string; name: strin
       </label>
       <label className="block text-sm sm:col-span-2">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+          KEHE report type
+        </span>
+        <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" defaultValue="">
+          <option value="">Not a KEHE file</option>
+          <option value="sales-through">Chains and Stores that ordered an Item</option>
+          <option value="stock-status">Stock Status Report</option>
+        </select>
+      </label>
+      <label className="block text-sm sm:col-span-2">
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
           CSV or TSV
         </span>
         <input

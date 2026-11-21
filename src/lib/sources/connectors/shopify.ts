@@ -1,9 +1,11 @@
-import { blankToNull, orderingMethodFromText, saleDirection } from "@/lib/sources/fields";
+import { blankToNull } from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
+import { classifyShopifyWholesaleOrder } from "@/lib/sources/revenue-classification";
 import type { PullResult } from "@/lib/sources/types";
 
 const API_VERSION = "2026-10";
-const PAGE_LIMIT = 10;
+/** 250 orders/page; loop until Shopify stops sending `next` (~62 pages for 15k orders). */
+const PAGE_LIMIT = 80;
 
 type ShopifyOrder = {
   id: number;
@@ -38,25 +40,26 @@ export async function pullShopify(): Promise<PullResult> {
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-    const blob = `${tags.join(" ")} ${order.note ?? ""}`;
-    const method = orderingMethodFromText(blob);
-    const markedDistributor = method !== "Direct" || /distributor/i.test(blob);
-    const placed = saleDirection(method, "api");
-    const direction = markedDistributor ? "to" : placed.direction;
-    const excludeFromDirect = markedDistributor;
+    const classification = classifyShopifyWholesaleOrder({
+      tags,
+      note: order.note ?? null,
+      orderName: order.name ?? null,
+      cancelled: Boolean(order.cancelled_at),
+    });
     const account = accountFrom(order);
     if (account) result.accounts.push(account);
     const shipDate = (order.processed_at || order.created_at || "").slice(0, 10) || null;
+    const revenue = classification.countsInRevenue ? numberOrNull(order.total_price) : 0;
     result.orders.push({
       externalId: String(order.id),
       accountExternalId: account?.externalId ?? null,
-      orderingMethod: method,
-      direction,
+      orderingMethod: classification.orderingMethod,
+      direction: classification.direction,
       shipDate,
-      revenue: order.cancelled_at ? 0 : numberOrNull(order.total_price),
+      revenue: order.cancelled_at ? 0 : revenue,
       currency: blankToNull(order.currency),
       tags: tags.join(", "),
-      excludeFromDirect,
+      excludeFromDirect: classification.excludeFromDirect,
       partner: "",
       lines: (order.line_items ?? []).map((line) => ({
         sku: blankToNull(line.sku),
@@ -75,9 +78,11 @@ export async function pullShopify(): Promise<PullResult> {
     });
   }
 
-  const distributorOrders = result.orders.filter((order) => order.excludeFromDirect).length;
+  const heldOut = result.orders.filter((order) => order.excludeFromDirect).length;
+  const review = result.orders.filter((order) => order.orderingMethod === "Unclassified").length;
+  const nonRevenue = result.orders.filter((order) => !order.revenue || order.revenue <= 0).length;
   result.rowCount = result.orders.length;
-  result.message = `Shopify returned ${result.orders.length} orders. ${distributorOrders} are marked so Direct totals can leave them out. Tags sample, POS, and merch stay on the order.`;
+  result.message = `Shopify returned ${result.orders.length} orders. ${heldOut} are held out of Direct, ${review} unclassified for review, ${nonRevenue} excluded from revenue (cancelled or sample/POS/merch tags).`;
   return result;
 }
 

@@ -105,7 +105,7 @@ export function parseCsv(text: string) {
     });
 }
 
-function splitCsv(text: string) {
+export function splitCsv(text: string) {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";

@@ -25,9 +25,17 @@ export function SourceRevenue({ report }: { report: RevenueReport }) {
       {report.state === "ready" ? (
         <>
           <p className="mb-4 text-sm text-muted">
-            {dollars(report.total)} across synced orders. Direct, excluding sales to a distributor, is{" "}
+            {dollars(report.total)} across {report.sourceNote}. Direct wholesale (confirmed, not held out) is{" "}
             {dollars(report.direct)}.
           </p>
+          {report.unclassified.orders > 0 || report.reviewOrders > 0 ? (
+            <p className="mb-4 text-sm text-muted">
+              {report.unclassified.orders.toLocaleString()} unclassified orders (
+              {dollars(report.unclassified.revenue)}) and {report.reviewOrders.toLocaleString()} rows need review
+              before they count as Direct. {report.nonRevenueOrders.toLocaleString()} orders are cancelled or tagged
+              sample, POS, or merch.
+            </p>
+          ) : null}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">

@@ -77,6 +77,30 @@ export const schemaStatements = [
     revenue numeric(14, 2)
   )`,
   `CREATE INDEX IF NOT EXISTS order_lines_order_id_idx ON order_lines (order_id)`,
+  `ALTER TABLE order_lines ADD COLUMN IF NOT EXISTS cases_ordered numeric(14, 3)`,
+  `ALTER TABLE order_lines ADD COLUMN IF NOT EXISTS cases_shipped numeric(14, 3)`,
+  `CREATE TABLE IF NOT EXISTS kehe_inventory_snapshots (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    dc_code text NOT NULL,
+    dc_name text NOT NULL,
+    row_kind text NOT NULL,
+    upc text NOT NULL DEFAULT '',
+    sku text,
+    description text,
+    qty_on_hand numeric(14, 3),
+    qty_on_po numeric(14, 3),
+    weeks_on_hand numeric(14, 3),
+    weeks_on_po numeric(14, 3),
+    qty_on_sales_order numeric(14, 3),
+    vendor_case_pack numeric(14, 3),
+    captured_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS kehe_inventory_org_captured_idx
+    ON kehe_inventory_snapshots (organization_id, captured_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS kehe_inventory_dc_upc_idx
+    ON kehe_inventory_snapshots (organization_id, dc_code, upc)`,
   `CREATE TABLE IF NOT EXISTS shipments (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id uuid NOT NULL REFERENCES organizations (id),

@@ -78,8 +78,9 @@ async function SourcesBody() {
       <div className="mt-6">
         <Panel title="File inbox" action="KEHE, UNFI, SPINS, DSD, Encompass">
           <p className="mb-4 text-sm text-muted">
-            Upload the CSV export. Excel files need to be saved as CSV first. Name the partner on DSD and
-            Encompass files. SPINS 4-packs and items under $2,000 stay out of SPINS views.
+            Upload the CSV export. Excel files need to be saved as CSV first. For KEHE, choose Chains and
+            Stores or Stock Status. Name the partner on DSD and Encompass files. SPINS 4-packs and items
+            under $2,000 stay out of SPINS views.
           </p>
           <ImportForm
             sources={fileSources.map((source) => ({ source: source.source, name: source.name }))}
