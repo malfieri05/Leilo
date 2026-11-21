@@ -1,73 +1,78 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { KpiCard } from "@/components/kpi-card";
+import { LeadsView } from "@/components/leads-view";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
+import { SalesFilters } from "@/components/sales-filters";
+import { compareLabel } from "@/components/sales-overview-view";
 import { listAccounts } from "@/lib/sources/accounts";
+import { loadLeads } from "@/lib/sources/leads-overview";
+import { parseSalesQuery, salesQueryString, type ResolvedPeriod, type SalesQuery } from "@/lib/sources/sales-overview-model";
 
 export const metadata: Metadata = { title: "Lead Generation" };
 
-export default function LeadsPage() {
+export default function LeadsPage({ searchParams }: PageProps<"/leads">) {
   return (
     <>
       <PageHeader
         title="Lead Generation"
-        description="Prospects that have not ordered yet. A company counts here when HubSpot customer type is Prospect, or when that field is still blank."
+        description="At Risk, Past, and upsell lists for KEHE, Direct, and DSD. Health is as of today. Competitor lookalikes wait on store lists."
       />
-      <Suspense fallback={<Panel title="Prospects">Loading HubSpot companies.</Panel>}>
-        <Prospects />
+      <Suspense fallback={<LeadsFallback />}>
+        <LeadsFrame searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function Prospects() {
+async function LeadsFrame({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
-  const list = await listAccounts({ source: "hubspot", prospects: true, limit: 100 });
-  const showing = list.state === "ready" ? list.rows.length : 0;
-  const total = list.state === "ready" || list.state === "empty" ? list.total : 0;
-
+  const parsed = parseSalesQuery(await searchParams);
   return (
-    <Panel title="Prospects" action={total ? `${showing} of ${total}` : "HubSpot"}>
-      <p className="mb-4 max-w-3xl text-sm text-muted">
-        Companies with customer type Prospect, or with no customer type yet. Refresh the list from{" "}
-        <Link href="/sources" className="font-semibold text-heading underline">
-          Sources
-        </Link>
-        .
-      </p>
-      {list.state === "error" ? <p className="text-sm text-hibiscus">{list.message}</p> : null}
-      {list.state === "no-database" ? <p className="text-sm text-muted">The database is not connected.</p> : null}
-      {list.state === "empty" ? (
-        <p className="text-sm text-muted">No prospect companies yet. Sync HubSpot on Sources.</p>
-      ) : null}
-      {list.state === "ready" ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.12em] text-muted">
-              <tr>
-                <th className="pb-3 font-medium">Account</th>
-                <th className="pb-3 font-medium">Region</th>
-                <th className="pb-3 font-medium">Industry</th>
-                <th className="pb-3 font-medium">Type</th>
-                <th className="pb-3 font-medium">Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.rows.map((account) => (
-                <tr key={`${account.source}-${account.externalId}`} className="border-t border-line">
-                  <td className="py-3 font-medium">{account.name}</td>
-                  <td className="py-3">{account.region ?? "—"}</td>
-                  <td className="py-3">{account.industryType ?? "—"}</td>
-                  <td className="py-3">{account.customerType ?? "Unset"}</td>
-                  <td className="py-3">{account.orderingMethod ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </Panel>
+    <>
+      <SalesFilters
+        key={salesQueryString(parsed.query)}
+        query={parsed.query}
+        periodLabel={parsed.period.label}
+        compareLabel={compareLabel(parsed.period)}
+      />
+      <Suspense fallback={<LeadsFallback />}>
+        <LeadsBody query={parsed.query} period={parsed.period} today={parsed.today} />
+      </Suspense>
+    </>
+  );
+}
+
+async function LeadsBody({ query, period, today }: { query: SalesQuery; period: ResolvedPeriod; today: string }) {
+  const [report, prospects] = await Promise.all([
+    loadLeads(query.region, period, today),
+    listAccounts({ source: "hubspot", prospects: true, limit: 50 }),
+  ]);
+  if (report.state === "no-database") {
+    return (
+      <Panel title="Database">
+        <p className="text-sm text-muted">Add DATABASE_URL to load lead lists.</p>
+      </Panel>
+    );
+  }
+  if (report.state === "error") {
+    return (
+      <Panel title="Could not load leads">
+        <p className="text-sm text-muted">{report.message}</p>
+      </Panel>
+    );
+  }
+  return <LeadsView report={report} prospects={prospects} period={period} />;
+}
+
+function LeadsFallback() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-3">
+      <KpiCard label="At Risk" value="—" delta="Loading" tone="flat" />
+      <KpiCard label="Past" value="—" delta="Loading" tone="flat" />
+      <KpiCard label="Upsell" value="—" delta="Loading" tone="flat" />
+    </div>
   );
 }

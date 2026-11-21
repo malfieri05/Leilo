@@ -79,7 +79,8 @@ async function SourcesBody() {
         <Panel title="File inbox" action="KEHE, UNFI, SPINS, DSD, Encompass">
           <p className="mb-4 text-sm text-muted">
             Upload the CSV export. Excel files need to be saved as CSV first. For KEHE, choose Chains and
-            Stores or Stock Status. Name the partner on DSD and Encompass files. SPINS 4-packs and items
+            Stores or Stock Status. On DSD and Encompass, use the same partner name on every file from that
+            distributor. For SPINS, choose the report and the 4-, 12-, 24-, or 52-week window. 4-packs and items
             under $2,000 stay out of SPINS views.
           </p>
           <ImportForm

@@ -7,6 +7,7 @@ import type {
   PullResult,
   RawDraft,
   ShipmentDraft,
+  SpinsRowDraft,
 } from "@/lib/sources/types";
 
 type Stored = {
@@ -15,6 +16,7 @@ type Stored = {
   shipments: ShipmentDraft[];
   raw: RawDraft[];
   inventory?: KeheInventoryDraft[];
+  spinsRows?: SpinsRowDraft[];
 };
 
 export async function persistBundle(
@@ -41,6 +43,7 @@ export async function persistBundle(
   await replaceLines(sql, orders, orderIds);
   await upsertShipments(sql, input.organizationId, input.source, shipments);
   await insertInventory(sql, input.organizationId, input.syncRunId, input.bundle.inventory ?? []);
+  await insertSpinsRows(sql, input.organizationId, input.syncRunId, input.bundle.spinsRows ?? []);
   await insertRaw(sql, input, input.bundle.raw);
 }
 
@@ -267,6 +270,43 @@ async function insertInventory(
       `INSERT INTO kehe_inventory_snapshots (
         organization_id, sync_run_id, dc_code, dc_name, row_kind, upc, sku, description,
         qty_on_hand, qty_on_po, weeks_on_hand, weeks_on_po, qty_on_sales_order, vendor_case_pack
+      ) VALUES ${values.join(", ")}`,
+      params,
+    );
+  }
+}
+
+async function insertSpinsRows(sql: Sql, organizationId: string, syncRunId: string, rows: SpinsRowDraft[]) {
+  for (const group of chunk(rows, 20)) {
+    const params: unknown[] = [];
+    const values = group.map((row, index) => {
+      const base = index * 16;
+      params.push(
+        organizationId,
+        syncRunId,
+        row.reportKind,
+        row.periodWeeks,
+        row.brand,
+        row.itemLabel,
+        row.upc,
+        row.retailer,
+        row.geography,
+        row.dollars,
+        row.units,
+        row.rank,
+        row.dollarsPct,
+        row.unitsPct,
+        row.included,
+        JSON.stringify(row.payload),
+      );
+      const slot = (offset: number) => `$${base + offset}`;
+      const cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((n) => slot(n));
+      return `(${cols.join(", ")}, ${slot(16)}::jsonb)`;
+    });
+    await sql.query(
+      `INSERT INTO spins_rows (
+        organization_id, sync_run_id, report_kind, period_weeks, brand, item_label, upc, retailer,
+        geography, dollars, units, rank, dollars_pct_chg, units_pct_chg, included, payload
       ) VALUES ${values.join(", ")}`,
       params,
     );

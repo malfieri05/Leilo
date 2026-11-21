@@ -37,6 +37,7 @@ export type SalesQuery = {
   segment: SegmentKey;
   segmentValue: string;
   cohort: CohortId | null;
+  partner: string | null;
 };
 
 export type ResolvedPeriod = {
@@ -163,6 +164,7 @@ export function parseSalesQuery(
   const segment = oneOf(one(input.segment), segmentKeys, "industry");
   const segmentValue = one(input.segmentValue).trim();
   const cohort = oneOfOrNull(one(input.cohort), cohortIds);
+  const partner = one(input.partner).trim() || null;
   const query: SalesQuery = {
     region,
     range,
@@ -171,6 +173,7 @@ export function parseSalesQuery(
     segment,
     segmentValue,
     cohort,
+    partner,
   };
   return { query, period: resolvePeriod(query, today), today };
 }
@@ -216,6 +219,7 @@ export function salesQueryString(query: SalesQuery, patch: Partial<SalesQuery> =
   if (next.segment !== "industry") params.set("segment", next.segment);
   if (next.segmentValue) params.set("segmentValue", next.segmentValue);
   if (next.cohort) params.set("cohort", next.cohort);
+  if (next.partner) params.set("partner", next.partner);
   const text = params.toString();
   return text ? `?${text}` : "";
 }

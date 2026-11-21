@@ -1,6 +1,5 @@
 import {
   blankToNull,
-  includeInSpinsView,
   isoDate,
   money,
   orderingMethodFromText,
@@ -10,6 +9,7 @@ import {
   saleDirection,
   stableId,
 } from "@/lib/sources/fields";
+import { dsdLineRevenue } from "@/lib/sources/dsd-model";
 import type { OrderingMethod, PullResult } from "@/lib/sources/types";
 
 const methodBySource: Record<string, OrderingMethod> = {
@@ -22,8 +22,6 @@ const methodBySource: Record<string, OrderingMethod> = {
 export function draftsFromFile(source: string, partner: string, rows: Record<string, string>[]): PullResult {
   const kept = rows.slice(0, 5000);
   const truncated = rows.length > kept.length;
-  if (source === "spins") return spinsDraft(partner, kept, truncated);
-
   const method = methodBySource[source] ?? orderingMethodFromText(source);
   const { direction, excludeFromDirect } = saleDirection(method, "file");
   const accounts = [];
@@ -46,10 +44,16 @@ export function draftsFromFile(source: string, partner: string, rows: Record<str
     }
 
     const orderNumber = pick(row, ["order number", "order #", "invoice", "po number", "po"]);
-    const revenue = money(pick(row, ["revenue", "sales dollars", "dollar sales", "dollars", "amount", "extended price", "total"]));
-    const units = quantity(pick(row, ["cases shipped", "qty shipped", "quantity", "qty", "cases ordered", "cases", "units"]));
+    const dollars = money(pick(row, ["revenue", "sales dollars", "dollar sales", "dollars", "amount", "extended price", "total"]));
+    const cases = optionalQty(pick(row, ["cases shipped", "cases ordered", "cases"]));
+    const eaches = optionalQty(pick(row, ["units", "qty shipped", "quantity", "qty", "eaches"]));
     const sku = blankToNull(pick(row, ["sku", "item code", "item", "upc"]));
     const productType = blankToNull(pick(row, ["product", "description", "item description"]));
+    const revenue =
+      source === "dsd" || source === "encompass"
+        ? dsdLineRevenue({ dollars, cases, units: eaches, sku, title: productType })
+        : dollars;
+    const units = eaches ?? cases;
     if (orderNumber || revenue !== null || units !== null || sku || productType) {
       orders.push({
         externalId: orderNumber || stableId([source, partner, JSON.stringify(row)]),
@@ -89,20 +93,9 @@ export function draftsFromFile(source: string, partner: string, rows: Record<str
   };
 }
 
-function spinsDraft(partner: string, rows: Record<string, string>[], truncated: boolean) {
-  const visible = rows.filter((row) => includeInSpinsView(row));
-  return {
-    message: `Stored ${rows.length} SPINS rows. ${visible.length} stay in SPINS views. 4-packs and items under $2,000 are left out of those views.${truncated ? " The file was longer than 5,000 rows." : ""}`,
-    rowCount: rows.length,
-    accounts: [],
-    orders: [],
-    shipments: [],
-    raw: rows.map((row, index) => ({
-      kind: "category" as const,
-      externalId: stableId([partner, String(index), JSON.stringify(row)]),
-      payload: { ...row, includeInSpinsView: includeInSpinsView(row) },
-    })),
-  };
+function optionalQty(value: string) {
+  if (!value.trim()) return null;
+  return quantity(value);
 }
 
 function keheFillRate(rows: Record<string, string>[]) {

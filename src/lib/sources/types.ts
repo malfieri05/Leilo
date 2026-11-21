@@ -68,6 +68,23 @@ export type RawDraft = {
   payload: unknown;
 };
 
+export type SpinsRowDraft = {
+  reportKind: string;
+  periodWeeks: number;
+  brand: string | null;
+  itemLabel: string | null;
+  upc: string | null;
+  retailer: string | null;
+  geography: string | null;
+  dollars: number | null;
+  units: number | null;
+  rank: number | null;
+  dollarsPct: number | null;
+  unitsPct: number | null;
+  included: boolean;
+  payload: Record<string, string>;
+};
+
 export type PullResult = {
   message: string;
   rowCount: number;
@@ -77,6 +94,7 @@ export type PullResult = {
   shipments: ShipmentDraft[];
   raw: RawDraft[];
   inventory?: KeheInventoryDraft[];
+  spinsRows?: SpinsRowDraft[];
 };
 
 export type SyncState = {

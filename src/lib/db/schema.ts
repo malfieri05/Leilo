@@ -101,6 +101,36 @@ export const schemaStatements = [
     ON kehe_inventory_snapshots (organization_id, captured_at DESC)`,
   `CREATE INDEX IF NOT EXISTS kehe_inventory_dc_upc_idx
     ON kehe_inventory_snapshots (organization_id, dc_code, upc)`,
+  `CREATE TABLE IF NOT EXISTS spins_rows (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    report_kind text NOT NULL,
+    period_weeks integer NOT NULL,
+    brand text,
+    item_label text,
+    upc text,
+    retailer text,
+    geography text,
+    dollars numeric(14, 2),
+    units numeric(14, 3),
+    rank integer,
+    dollars_pct_chg numeric(14, 4),
+    units_pct_chg numeric(14, 4),
+    included boolean NOT NULL,
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb
+  )`,
+  `CREATE INDEX IF NOT EXISTS spins_rows_slot_idx
+    ON spins_rows (organization_id, report_kind, period_weeks, included)`,
+  `CREATE INDEX IF NOT EXISTS spins_rows_sync_idx
+    ON spins_rows (organization_id, sync_run_id)`,
+  `CREATE TABLE IF NOT EXISTS lead_competitors (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    name text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, name)
+  )`,
   `CREATE TABLE IF NOT EXISTS shipments (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id uuid NOT NULL REFERENCES organizations (id),

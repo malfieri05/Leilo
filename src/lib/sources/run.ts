@@ -6,9 +6,18 @@ import { pullShipStation } from "@/lib/sources/connectors/shipstation";
 import { pullShopify } from "@/lib/sources/connectors/shopify";
 import { pullSpins } from "@/lib/sources/connectors/spins";
 import { draftsFromFile, parseDelimited } from "@/lib/sources/files";
+import { normalizePartnerName } from "@/lib/sources/dsd/partners";
 import { parseKeheSalesFile } from "@/lib/sources/kehe/parse-sales-through";
 import { parseKeheStockStatus } from "@/lib/sources/kehe/parse-stock-status";
 import { persistBundle } from "@/lib/sources/persist";
+import { parseSpinsExport } from "@/lib/sources/spins/parse-export";
+import {
+  SPINS_PERIOD_WEEKS,
+  SPINS_REPORT_KINDS,
+  spinsPartnerSlug,
+  type SpinsPeriodWeeks,
+  type SpinsReportKind,
+} from "@/lib/sources/spins-model";
 import type { PullResult, SyncState } from "@/lib/sources/types";
 
 const pullers: Record<string, () => Promise<PullResult>> = {
@@ -54,6 +63,7 @@ export async function importSourceFile(input: {
   filename: string;
   text: string;
   reportKind?: string;
+  periodWeeks?: string;
 }): Promise<SyncState> {
   const spec = specFor(input.source);
   if (!spec || spec.kind === "api") {
@@ -74,7 +84,22 @@ export async function importSourceFile(input: {
     return { ok: false, message: "That file has no data rows." };
   }
 
-  const partner = input.partner.trim().slice(0, 80);
+  const rawPartner = input.partner.trim().slice(0, 80);
+  const partner =
+    input.source === "dsd" || input.source === "encompass" ? normalizePartnerName(rawPartner).slice(0, 80) : rawPartner;
+  if ((input.source === "dsd" || input.source === "encompass") && !partner) {
+    return { ok: false, message: "Name the partner for a DSD or Encompass file." };
+  }
+  if (input.source === "spins") {
+    const reportKind = asReportKind(input.reportKind ?? "");
+    const periodWeeks = asPeriodWeeks(input.periodWeeks ?? "");
+    if (!reportKind || !periodWeeks) {
+      return { ok: false, message: "Choose a SPINS report type and a 4-, 12-, 24-, or 52-week period." };
+    }
+    return execute(input.source, spinsPartnerSlug(reportKind, periodWeeks), spec.method, async () =>
+      parseSpinsExport(rows, reportKind, periodWeeks),
+    );
+  }
   if (input.source === "kehe") {
     const kind = input.reportKind === "stock-status" ? "stock-status" : "sales-through";
     if (!input.reportKind) {
@@ -85,6 +110,15 @@ export async function importSourceFile(input: {
     );
   }
   return execute(input.source, partner, spec.method, async () => draftsFromFile(input.source, partner, rows));
+}
+
+function asReportKind(value: string): SpinsReportKind | null {
+  return SPINS_REPORT_KINDS.includes(value as SpinsReportKind) ? (value as SpinsReportKind) : null;
+}
+
+function asPeriodWeeks(value: string): SpinsPeriodWeeks | null {
+  const weeks = Number(value);
+  return SPINS_PERIOD_WEEKS.includes(weeks as SpinsPeriodWeeks) ? (weeks as SpinsPeriodWeeks) : null;
 }
 
 async function execute(

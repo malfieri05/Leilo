@@ -22,7 +22,7 @@ describe("resolvePeriod", () => {
 
   it("uses the calendar month for month to date", () => {
     const period = resolvePeriod(
-      { region: "nationwide", range: "mtd", from: null, to: null, segment: "industry", segmentValue: "", cohort: null },
+      { region: "nationwide", range: "mtd", from: null, to: null, segment: "industry", segmentValue: "", cohort: null, partner: null },
       "2026-11-21",
     );
     assert.equal(period.from, "2026-11-01");
@@ -34,7 +34,7 @@ describe("resolvePeriod", () => {
   it("clamps a leap day when shifting back a year", () => {
     assert.equal(shiftYears("2024-02-29", -1), "2023-02-28");
     const period = resolvePeriod(
-      { region: "nationwide", range: "ytd", from: null, to: null, segment: "industry", segmentValue: "", cohort: null },
+      { region: "nationwide", range: "ytd", from: null, to: null, segment: "industry", segmentValue: "", cohort: null, partner: null },
       "2024-02-29",
     );
     assert.equal(period.compareTo, "2023-02-28");
@@ -42,7 +42,7 @@ describe("resolvePeriod", () => {
 
   it("drops the comparison for all time and swaps an inverted custom range", () => {
     const all = resolvePeriod(
-      { region: "nationwide", range: "all", from: null, to: null, segment: "industry", segmentValue: "", cohort: null },
+      { region: "nationwide", range: "all", from: null, to: null, segment: "industry", segmentValue: "", cohort: null, partner: null },
       "2026-11-21",
     );
     assert.equal(all.from, null);
@@ -57,6 +57,7 @@ describe("resolvePeriod", () => {
         segment: "industry",
         segmentValue: "",
         cohort: null,
+        partner: null,
       },
       "2026-11-21",
     );

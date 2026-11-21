@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { importFileAction, syncSourceAction } from "@/app/sources/actions";
+import { DSD_PARTNERS } from "@/lib/sources/dsd/partners";
 import type { SyncState } from "@/lib/sources/types";
 
 const buttonClass =
@@ -35,40 +36,84 @@ export function SyncAllButton({ disabled }: { disabled: boolean }) {
 
 export function ImportForm({ sources }: { sources: { source: string; name: string }[] }) {
   const [state, action, pending] = useActionState(importFileAction, null as SyncState);
+  const [source, setSource] = useState(sources[0]?.source ?? "");
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2">
       <label className="block text-sm">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
           Source
         </span>
-        <select name="source" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" required>
-          {sources.map((source) => (
-            <option key={source.source} value={source.source}>
-              {source.name}
+        <select
+          name="source"
+          value={source}
+          onChange={(event) => setSource(event.target.value)}
+          className="w-full rounded-[10px] border border-line bg-paper px-3 py-2"
+          required
+        >
+          {sources.map((item) => (
+            <option key={item.source} value={item.source}>
+              {item.name}
             </option>
           ))}
         </select>
       </label>
-      <label className="block text-sm">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-          Partner
-        </span>
-        <input
-          name="partner"
-          placeholder="Required for DSD and Encompass"
-          className="w-full rounded-[10px] border border-line bg-paper px-3 py-2"
-        />
-      </label>
-      <label className="block text-sm sm:col-span-2">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-          KEHE report type
-        </span>
-        <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" defaultValue="">
-          <option value="">Not a KEHE file</option>
-          <option value="sales-through">Chains and Stores that ordered an Item</option>
-          <option value="stock-status">Stock Status Report</option>
-        </select>
-      </label>
+      {source === "spins" ? (
+        <>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              SPINS report
+            </span>
+            <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" required defaultValue="">
+              <option value="" disabled>
+                Choose a report
+              </option>
+              <option value="brand-rank">Brand Rank</option>
+              <option value="item-rank">Item Rank</option>
+              <option value="sprouts-matrix">Sprouts Item Matrix</option>
+            </select>
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              SPINS period
+            </span>
+            <select name="periodWeeks" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" required defaultValue="12">
+              <option value="4">4 weeks</option>
+              <option value="12">12 weeks</option>
+              <option value="24">24 weeks</option>
+              <option value="52">52 weeks</option>
+            </select>
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              Partner
+            </span>
+            <input
+              name="partner"
+              list="dsd-partners"
+              placeholder="Required for DSD and Encompass"
+              className="w-full rounded-[10px] border border-line bg-paper px-3 py-2"
+            />
+            <datalist id="dsd-partners">
+              {DSD_PARTNERS.map((partner) => (
+                <option key={partner.slug} value={partner.label} />
+              ))}
+            </datalist>
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              KEHE report type
+            </span>
+            <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" defaultValue="">
+              <option value="">Not a KEHE file</option>
+              <option value="sales-through">Chains and Stores that ordered an Item</option>
+              <option value="stock-status">Stock Status Report</option>
+            </select>
+          </label>
+        </>
+      )}
       <label className="block text-sm sm:col-span-2">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
           CSV or TSV

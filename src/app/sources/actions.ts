@@ -11,6 +11,9 @@ export async function syncSourceAction(_prev: SyncState, formData: FormData): Pr
   const result = source === "all" ? await runConfiguredSources() : await runConnector(source);
   revalidatePath("/sources");
   revalidatePath("/");
+  revalidatePath("/direct");
+  revalidatePath("/sales");
+  revalidatePath("/spins");
   return result;
 }
 
@@ -32,9 +35,13 @@ export async function importFileAction(_prev: SyncState, formData: FormData): Pr
     filename: file.name,
     text,
     reportKind: String(formData.get("reportKind") ?? ""),
+    periodWeeks: String(formData.get("periodWeeks") ?? ""),
   });
   revalidatePath("/sources");
   revalidatePath("/");
   revalidatePath("/kehe");
+  revalidatePath("/direct");
+  revalidatePath("/dsd");
+  revalidatePath("/spins");
   return result;
 }
