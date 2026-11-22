@@ -1,8 +1,8 @@
 import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, type Sql } from "@/lib/db";
-import { fillRate, industryBucket, isKeheUpsellSku } from "@/lib/sources/kehe-model";
-import { productFamily, type ProductFamily } from "@/lib/sources/sales-overview-model";
+import { industryTotals, salesSyncedAt, salesTotals, skuCuts } from "@/lib/sources/distributor-through-queries";
+import { fillRate, isKeheUpsellSku } from "@/lib/sources/kehe-model";
 import { classifyKeheStockRow, stockIntegrityWarnings, type StockFlag } from "@/lib/sources/kehe-stock-flags";
-import { addDays, regionStates, type RegionKey, type ResolvedPeriod } from "@/lib/sources/sales-overview-model";
+import { addDays, regionStates, type ProductFamily, type RegionKey, type ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 
 export type KeheName = { id: string; name: string };
 
@@ -62,12 +62,13 @@ export async function loadKeheOverview(
   try {
     await ensureSchema();
     const organizationId = await leiloOrganizationId(sql);
-    const [sales, cuts, fill, industry, syncs, stock, priorStock, growth] = await Promise.all([
-      salesTotals(sql, organizationId, region, period),
-      skuCuts(sql, organizationId, region, period),
+    const [sales, cuts, fill, industry, salesSync, stockSync, stock, priorStock, growth] = await Promise.all([
+      salesTotals(sql, organizationId, "kehe", region, period),
+      skuCuts(sql, organizationId, "kehe", region, period),
       fillTotals(sql, organizationId, region, period),
-      industryTotals(sql, organizationId, region, period),
-      syncTimes(sql, organizationId),
+      industryTotals(sql, organizationId, "kehe", region, period),
+      salesSyncedAt(sql, organizationId, "kehe"),
+      stockSyncedAt(sql, organizationId),
       latestStock(sql, organizationId, 0),
       latestStock(sql, organizationId, 1),
       growthSlice(sql, organizationId, region, period, today),
@@ -88,8 +89,8 @@ export async function loadKeheOverview(
       skus: cuts.skus,
       families: cuts.families,
       industry,
-      salesSyncedAt: syncs.sales,
-      stockSyncedAt: syncs.stock,
+      salesSyncedAt: salesSync,
+      stockSyncedAt: stockSync,
       latestShip: sales.latestShip,
       stock: stockView.cells,
       nearMisses: stockView.nearMisses,
@@ -101,112 +102,6 @@ export async function loadKeheOverview(
   } catch (error) {
     return { state: "error", message: publicError(error) };
   }
-}
-
-async function salesTotals(sql: Sql, organizationId: string, region: RegionKey, period: ResolvedPeriod) {
-  const params: unknown[] = [organizationId];
-  const regionSql = accountRegion(region, params);
-  const current = between("o.ship_date", period.from, period.to, params);
-  const prior = between("o.ship_date", period.compareFrom, period.compareTo, params);
-  const money = first(
-    await sql.query(
-      `SELECT
-         COUNT(DISTINCT o.account_id) FILTER (WHERE ${current})::int AS locations,
-         COALESCE(SUM(o.revenue) FILTER (WHERE ${current}), 0) AS revenue,
-         COALESCE(SUM(o.revenue) FILTER (WHERE ${prior}), 0) AS prior_revenue,
-         (SELECT MAX(ship_date) FROM orders
-           WHERE organization_id = $1 AND source = 'kehe' AND direction = 'through') AS latest_ship
-       FROM orders o
-       LEFT JOIN accounts a ON a.id = o.account_id
-       WHERE o.organization_id = $1
-         AND o.source = 'kehe'
-         AND o.direction = 'through'
-         AND o.revenue > 0
-         ${regionSql}`,
-      params,
-    ),
-  );
-  const cutParams: unknown[] = [organizationId];
-  const cutRegion = accountRegion(region, cutParams);
-  const cutCurrent = between("o.ship_date", period.from, period.to, cutParams);
-  const cuts = first(
-    await sql.query(
-      `SELECT
-         COUNT(DISTINCT l.sku) FILTER (WHERE l.sku IS NOT NULL AND btrim(l.sku) <> '')::int AS skus,
-         COUNT(DISTINCT (o.account_id::text || '|' || l.sku)) FILTER (
-           WHERE o.account_id IS NOT NULL AND l.sku IS NOT NULL AND btrim(l.sku) <> ''
-         )::int AS pods
-       FROM orders o
-       JOIN order_lines l ON l.order_id = o.id
-       LEFT JOIN accounts a ON a.id = o.account_id
-       WHERE o.organization_id = $1
-         AND o.source = 'kehe'
-         AND o.direction = 'through'
-         AND o.revenue > 0
-         AND ${cutCurrent}
-         ${cutRegion}`,
-      cutParams,
-    ),
-  );
-  return {
-    locations: num(money.locations),
-    revenue: num(money.revenue),
-    priorRevenue: num(money.prior_revenue),
-    skus: num(cuts.skus),
-    pods: num(cuts.pods),
-    latestShip: dateOnly(money.latest_ship),
-  };
-}
-
-async function skuCuts(sql: Sql, organizationId: string, region: RegionKey, period: ResolvedPeriod) {
-  const params: unknown[] = [organizationId];
-  const regionSql = accountRegion(region, params);
-  const current = between("o.ship_date", period.from, period.to, params);
-  const rows = asRows(
-    await sql.query(
-      `SELECT
-         COALESCE(NULLIF(btrim(l.sku), ''), 'No SKU') AS sku,
-         COALESCE(l.product_type, '') AS title,
-         SUM(COALESCE(l.revenue, o.revenue, 0)) AS revenue,
-         COUNT(DISTINCT o.account_id) FILTER (WHERE o.account_id IS NOT NULL)::int AS pods
-       FROM orders o
-       JOIN order_lines l ON l.order_id = o.id
-       LEFT JOIN accounts a ON a.id = o.account_id
-       WHERE o.organization_id = $1
-         AND o.source = 'kehe'
-         AND o.direction = 'through'
-         AND o.revenue > 0
-         AND ${current}
-         ${regionSql}
-       GROUP BY 1, 2`,
-      params,
-    ),
-  );
-  const bySku = new Map<string, { sku: string; revenue: number; pods: number; title: string }>();
-  for (const row of rows) {
-    const sku = text(row.sku);
-    const currentSku = bySku.get(sku) ?? { sku, revenue: 0, pods: 0, title: text(row.title) };
-    currentSku.revenue += num(row.revenue);
-    currentSku.pods += num(row.pods);
-    if (!currentSku.title && text(row.title)) currentSku.title = text(row.title);
-    bySku.set(sku, currentSku);
-  }
-  const skus = [...bySku.values()].sort((a, b) => b.revenue - a.revenue || a.sku.localeCompare(b.sku));
-  const families = new Map<ProductFamily, number>([
-    ["RTDs/Cans", 0],
-    ["Kava Extract", 0],
-    ["Kava Flakes", 0],
-    ["Kava Powders", 0],
-    ["Unmapped", 0],
-  ]);
-  for (const sku of skus) {
-    const family = productFamily(sku.sku === "No SKU" ? null : sku.sku, sku.title);
-    families.set(family, (families.get(family) ?? 0) + sku.revenue);
-  }
-  return {
-    skus: skus.map((sku) => ({ sku: sku.sku, revenue: sku.revenue, pods: sku.pods })),
-    families: [...families.entries()].map(([family, revenue]) => ({ family, revenue })),
-  };
 }
 
 async function fillTotals(sql: Sql, organizationId: string, region: RegionKey, period: ResolvedPeriod) {
@@ -264,64 +159,20 @@ async function fillTotals(sql: Sql, organizationId: string, region: RegionKey, p
   };
 }
 
-async function industryTotals(sql: Sql, organizationId: string, region: RegionKey, period: ResolvedPeriod) {
-  const params: unknown[] = [organizationId];
-  const regionSql = accountRegion(region, params);
-  const current = between("o.ship_date", period.from, period.to, params);
-  const rows = asRows(
+async function stockSyncedAt(sql: Sql, organizationId: string) {
+  const row = first(
     await sql.query(
-      `SELECT
-         COALESCE(NULLIF(btrim(COALESCE(a.industry_type, h.industry_type)), ''), '') AS industry,
-         COUNT(DISTINCT o.account_id)::int AS accounts,
-         COALESCE(SUM(o.revenue), 0) AS revenue
-       FROM orders o
-       LEFT JOIN accounts a ON a.id = o.account_id
-       LEFT JOIN accounts h
-         ON h.organization_id = a.organization_id
-        AND h.source = 'hubspot'
-        AND lower(btrim(h.name)) = lower(btrim(a.name))
-       WHERE o.organization_id = $1
-         AND o.source = 'kehe'
-         AND o.direction = 'through'
-         AND o.revenue > 0
-         AND ${current}
-         ${regionSql}
-       GROUP BY 1`,
-      params,
-    ),
-  );
-  const total = rows.reduce((sum, row) => sum + num(row.revenue), 0);
-  return rows
-    .map((row) => ({
-      type: industryBucket(text(row.industry)),
-      accounts: num(row.accounts),
-      revenue: num(row.revenue),
-      share: total > 0 ? num(row.revenue) / total : 0,
-    }))
-    .sort((a, b) => {
-      if (a.type === "Needs a type") return -1;
-      if (b.type === "Needs a type") return 1;
-      return b.revenue - a.revenue;
-    });
-}
-
-async function syncTimes(sql: Sql, organizationId: string) {
-  const rows = asRows(
-    await sql.query(
-      `SELECT c.partner, MAX(r.finished_at) AS finished_at
+      `SELECT MAX(r.finished_at) AS finished_at
        FROM sync_runs r
        JOIN source_connections c ON c.id = r.connection_id
        WHERE c.organization_id = $1
          AND c.source = 'kehe'
          AND r.status = 'ok'
-         AND c.partner IN ('sales-through', 'stock-status')
-       GROUP BY c.partner`,
+         AND c.partner = 'stock-status'`,
       [organizationId],
     ),
   );
-  const sales = rows.find((row) => text(row.partner) === "sales-through");
-  const stock = rows.find((row) => text(row.partner) === "stock-status");
-  return { sales: stamp(sales?.finished_at), stock: stamp(stock?.finished_at) };
+  return stamp(row.finished_at);
 }
 
 async function latestStock(sql: Sql, organizationId: string, offset: number) {
@@ -577,12 +428,6 @@ function text(value: unknown) {
   if (typeof value === "string") return value;
   if (value == null) return "";
   return String(value);
-}
-
-function dateOnly(value: unknown) {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
-  if (typeof value === "string" && value) return value.slice(0, 10);
-  return null;
 }
 
 function stamp(value: unknown) {

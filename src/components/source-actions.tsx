@@ -84,35 +84,36 @@ export function ImportForm({ sources }: { sources: { source: string; name: strin
             </select>
           </label>
         </>
+      ) : source === "sku-pricelist" || source === "promo-calendar" ? null : source === "kehe" || source === "unfi" ? (
+        <label className="block text-sm sm:col-span-2">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            Distributor report type
+          </span>
+          <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" required defaultValue="">
+            <option value="" disabled>
+              Choose a report
+            </option>
+            <option value="sales-through">Chains and Stores that ordered an Item</option>
+            {source === "kehe" ? <option value="stock-status">Stock Status Report</option> : null}
+          </select>
+        </label>
       ) : (
-        <>
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              Partner
-            </span>
-            <input
-              name="partner"
-              list="dsd-partners"
-              placeholder="Required for DSD and Encompass"
-              className="w-full rounded-[10px] border border-line bg-paper px-3 py-2"
-            />
-            <datalist id="dsd-partners">
-              {DSD_PARTNERS.map((partner) => (
-                <option key={partner.slug} value={partner.label} />
-              ))}
-            </datalist>
-          </label>
-          <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              KEHE report type
-            </span>
-            <select name="reportKind" className="w-full rounded-[10px] border border-line bg-paper px-3 py-2" defaultValue="">
-              <option value="">Not a KEHE file</option>
-              <option value="sales-through">Chains and Stores that ordered an Item</option>
-              <option value="stock-status">Stock Status Report</option>
-            </select>
-          </label>
-        </>
+        <label className="block text-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            Partner
+          </span>
+          <input
+            name="partner"
+            list="dsd-partners"
+            placeholder="Required for DSD and Encompass"
+            className="w-full rounded-[10px] border border-line bg-paper px-3 py-2"
+          />
+          <datalist id="dsd-partners">
+            {DSD_PARTNERS.map((partner) => (
+              <option key={partner.slug} value={partner.label} />
+            ))}
+          </datalist>
+        </label>
       )}
       <label className="block text-sm sm:col-span-2">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">

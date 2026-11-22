@@ -60,6 +60,7 @@ export async function pullShopify(): Promise<PullResult> {
       currency: blankToNull(order.currency),
       tags: tags.join(", "),
       excludeFromDirect: classification.excludeFromDirect,
+      reference: blankToNull(order.name),
       partner: "",
       lines: (order.line_items ?? []).map((line) => ({
         sku: blankToNull(line.sku),

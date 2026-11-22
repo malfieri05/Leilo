@@ -101,7 +101,7 @@ DSD fields he wants pushed into HubSpot: retailer name, address, Industry Type, 
 
 **Promotions.** KEHE national deals, MCBs, and retailer-specific promotions. He also watches KEHE emails for independent-east and independent-west and wants account, SKUs, revenue, and discount percent summarized. UNFI promotions are the same idea, not active yet.
 
-**Tracking.** An order stays on the tracking view until 21 days after delivery. POS and merch are Shopify tags. Samples are the Shopify tag `sample`. LTL tracking comes from a spreadsheet; only the “BOLs for TLs” tab, and only rows whose order id starts with `B-` or `#B-`.
+**Tracking.** An order stays on the tracking view until 21 days after delivery. POS and merch are Shopify tags. Samples are the Shopify tag `sample`. LTL tracking comes from the Google Sheet **Kehe** tab, and only rows whose order id starts with `#B-`.
 
 **Store locator, his version.** Doors that ordered in the last 180 days. He wants it refreshed weekly, but only after Direct, KEHE, UNFI, and DSD are all flowing. That is a different rule from the public Find Us map already in this app, which is a snapshot of the live locator.
 

@@ -69,7 +69,7 @@ function present(
     status = saved?.lastStatus === "ok" ? "File received" : "File inbox";
     canSync = false;
     if (!detail && spec.source === "unfi") {
-      detail = "UNFI is not active. The file inbox is ready when it is turned on.";
+      detail = "Upload a sales-through CSV. The UNFI tab stays empty until a file arrives.";
     }
   } else if (!configured) {
     status = "Needs credentials";

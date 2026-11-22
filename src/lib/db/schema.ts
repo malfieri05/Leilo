@@ -63,9 +63,11 @@ export const schemaStatements = [
     tags text NOT NULL DEFAULT '',
     exclude_from_direct boolean NOT NULL DEFAULT false,
     partner text NOT NULL DEFAULT '',
+    reference text,
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (organization_id, source, external_id)
   )`,
+  `ALTER TABLE orders ADD COLUMN IF NOT EXISTS reference text`,
   `CREATE INDEX IF NOT EXISTS orders_method_idx
     ON orders (organization_id, ordering_method, direction)`,
   `CREATE TABLE IF NOT EXISTS order_lines (
@@ -124,6 +126,71 @@ export const schemaStatements = [
     ON spins_rows (organization_id, report_kind, period_weeks, included)`,
   `CREATE INDEX IF NOT EXISTS spins_rows_sync_idx
     ON spins_rows (organization_id, sync_run_id)`,
+  `CREATE TABLE IF NOT EXISTS sku_catalog (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    catalog_key text NOT NULL,
+    effective_date date,
+    category text NOT NULL,
+    item_number text,
+    kehe_esn text,
+    unit_upc text,
+    case_upc text,
+    gtin text,
+    ranking integer,
+    description text,
+    inner_pack text,
+    master_pack integer,
+    unit_size text,
+    fob_unit numeric(14, 2),
+    fob_inner numeric(14, 2),
+    fob_case numeric(14, 2),
+    delivered_unit numeric(14, 2),
+    delivered_inner numeric(14, 2),
+    delivered_case numeric(14, 2),
+    dsd_unit numeric(14, 2),
+    dsd_inner numeric(14, 2),
+    dsd_case numeric(14, 2),
+    msrp numeric(14, 2),
+    logistics jsonb NOT NULL DEFAULT '{}'::jsonb,
+    is_four_pack boolean NOT NULL DEFAULT false,
+    format text NOT NULL,
+    supplement_facts_url text,
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    UNIQUE (organization_id, catalog_key)
+  )`,
+  `CREATE INDEX IF NOT EXISTS sku_catalog_org_idx
+    ON sku_catalog (organization_id, category, ranking)`,
+  `CREATE TABLE IF NOT EXISTS promo_events (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    event_key text NOT NULL,
+    account text NOT NULL,
+    account_type text,
+    distributor text,
+    channel text NOT NULL,
+    year integer NOT NULL,
+    month integer NOT NULL,
+    month_label text NOT NULL,
+    summary text NOT NULL,
+    status text NOT NULL DEFAULT 'active',
+    start_date date,
+    end_date date,
+    row_order integer NOT NULL,
+    notes text,
+    UNIQUE (organization_id, event_key)
+  )`,
+  `CREATE INDEX IF NOT EXISTS promo_events_slot_idx
+    ON promo_events (organization_id, year, month, channel)`,
+  `CREATE TABLE IF NOT EXISTS promo_calendar_snapshots (
+    organization_id uuid PRIMARY KEY REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    title text,
+    source_note text,
+    matrix jsonb NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS lead_competitors (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id uuid NOT NULL REFERENCES organizations (id),
@@ -141,10 +208,14 @@ export const schemaStatements = [
     delivered_at timestamptz,
     carrier text,
     tracking_number text,
+    tracking_url text,
+    destination text,
     relevant_until date,
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (organization_id, source, external_id)
   )`,
+  `ALTER TABLE shipments ADD COLUMN IF NOT EXISTS tracking_url text`,
+  `ALTER TABLE shipments ADD COLUMN IF NOT EXISTS destination text`,
   `INSERT INTO organizations (name)
    VALUES ('Leilo')
    ON CONFLICT (name) DO NOTHING`,

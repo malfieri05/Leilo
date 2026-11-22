@@ -1,6 +1,6 @@
 import { createSign } from "node:crypto";
-import { blankToNull, isB2bOrderId, pick, stableId } from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
+import { ltlShipmentsFromRecords } from "@/lib/sources/ltl/parse-kehe-tab";
 import type { PullResult } from "@/lib/sources/types";
 
 type ServiceAccount = { client_email: string; private_key: string };
@@ -28,7 +28,8 @@ export async function pullGoogleSheets(): Promise<PullResult> {
 
   for (const sheet of configured) {
     const id = process.env[sheet.env]?.trim() ?? "";
-    const values = await readSheet(token, id, account.client_email, sheet.label);
+    const range = sheet.kind === "shipment" ? ltlRange() : "A:Z";
+    const values = await readSheet(token, id, account.client_email, sheet.label, range);
     const records = rowsFromValues(values);
     const kept = records.slice(0, 2000);
     result.raw.push({
@@ -38,23 +39,10 @@ export async function pullGoogleSheets(): Promise<PullResult> {
     });
 
     if (sheet.kind === "shipment") {
-      let b2b = 0;
-      for (const record of records) {
-        const orderId = pick(record, ["order", "order #", "order number", "po"]) || Object.values(record)[0] || "";
-        if (!isB2bOrderId(orderId)) continue;
-        b2b += 1;
-        result.shipments.push({
-          externalId: stableId(["ltl", orderId]),
-          orderExternalId: orderId.trim(),
-          status: "ltl",
-          deliveredAt: null,
-          carrier: blankToNull(pick(record, ["carrier", "scac"])),
-          trackingNumber: blankToNull(pick(record, ["pro", "tracking", "bol"])),
-          relevantUntil: null,
-        });
-      }
+      const shipments = ltlShipmentsFromRecords(records);
+      result.shipments.push(...shipments);
       notes.push(
-        `${sheet.label}: ${records.length} rows, ${b2b} counted as B2B because the order id starts with B- or #B-.`,
+        `${sheet.label}: ${records.length} rows on the ${ltlTabName()} tab, ${shipments.length} kept because the order id starts with #B-.`,
       );
     } else {
       notes.push(`${sheet.label}: ${records.length} rows stored as reference data.`);
@@ -118,8 +106,17 @@ async function accessToken(account: ServiceAccount) {
   return body.access_token;
 }
 
-async function readSheet(token: string, id: string, email: string, label: string) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent("A:Z")}`;
+function ltlTabName() {
+  return process.env.GOOGLE_SHEET_LTL_TAB?.trim() || "Kehe";
+}
+
+function ltlRange() {
+  const tab = ltlTabName().replace(/'/g, "''");
+  return `'${tab}'!A:Z`;
+}
+
+async function readSheet(token: string, id: string, email: string, label: string, range: string) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}/values/${encodeURIComponent(range)}`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (response.status === 403 || response.status === 404) {
     throw new Error(

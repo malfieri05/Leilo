@@ -1,20 +1,26 @@
 import { blankToNull, isoDate, money, quantity, splitCsv, stableId } from "@/lib/sources/fields";
 import { headerKey, pickColumn, recordsFromTable } from "@/lib/sources/kehe/columns";
-import type { PullResult } from "@/lib/sources/types";
+import type { OrderingMethod, PullResult } from "@/lib/sources/types";
+
+export type DistributorSalesSource = "kehe" | "unfi";
+
+type SalesParseOptions = { distributor?: DistributorSalesSource };
 
 /** KEHE's price to the retailer, from the client write-up. */
 export const KEHE_PRICE_PER_CAN = 2.66;
 /** A single-can case is 12 cans when the file reports cases and no dollar column. */
 export const CANS_PER_CASE = 12;
 
-export function parseKeheSalesThrough(rows: Record<string, string>[]): PullResult {
+export function parseKeheSalesThrough(rows: Record<string, string>[], options: SalesParseOptions = {}): PullResult {
+  const distributor = options.distributor ?? "kehe";
+  const method = orderingMethodFor(distributor);
   const accounts = [];
   const orders = [];
   const raw = [];
 
   for (const row of rows) {
     const name = blankToNull(pickColumn(row, ["chain", "store name", "store", "customer", "retailer", "account"]));
-    const externalId = name ? stableId(["kehe", "sales-through", name]) : null;
+    const externalId = name ? stableId([distributor, "sales-through", name]) : null;
     const region = blankToNull(pickColumn(row, ["state", "region", "ship state"]));
     if (name && externalId) {
       accounts.push({
@@ -24,7 +30,7 @@ export function parseKeheSalesThrough(rows: Record<string, string>[]): PullResul
         region,
         industryType: null,
         customerType: null,
-        orderingMethod: "KEHE",
+        orderingMethod: method,
       });
     }
 
@@ -53,11 +59,11 @@ export function parseKeheSalesThrough(rows: Record<string, string>[]): PullResul
     const shipDate = isoDate(pickColumn(row, ["ship date", "shipped date", "invoice date", "date"]));
     if (!name && revenue === null && !sku && casesOrdered === null && casesShipped === null) continue;
 
-    const orderKey = stableId(["kehe", "sales-through", name ?? "", sku ?? "", shipDate ?? "", JSON.stringify(row)]);
+    const orderKey = stableId([distributor, "sales-through", name ?? "", sku ?? "", shipDate ?? "", JSON.stringify(row)]);
     orders.push({
       externalId: orderKey,
       accountExternalId: externalId,
-      orderingMethod: "KEHE" as const,
+      orderingMethod: method,
       direction: "through" as const,
       shipDate,
       revenue,
@@ -80,7 +86,7 @@ export function parseKeheSalesThrough(rows: Record<string, string>[]): PullResul
   }
 
   return {
-    message: `Stored ${orders.length} KEHE sales-through rows from ${rows.length} lines. Revenue uses shipped dollars, or $${KEHE_PRICE_PER_CAN} per can when the file has units or cases only.`,
+    message: `Stored ${orders.length} ${labelFor(distributor)} sales-through rows from ${rows.length} lines. Revenue uses shipped dollars, or $${KEHE_PRICE_PER_CAN} per can when the file has units or cases only.`,
     rowCount: orders.length + accounts.length,
     accounts,
     orders,
@@ -117,12 +123,12 @@ const MONTHS: Record<string, number> = {
 };
 
 /** Flat Chains-and-Stores rows, or the monthly retailer pivot Connect exports today. */
-export function parseKeheSalesFile(text: string): PullResult {
+export function parseKeheSalesFile(text: string, options: SalesParseOptions = {}): PullResult {
   const table = splitCsv(text.replace(/^\uFEFF/, ""));
   const pivotHeader = table.findIndex((row, index) => index < 15 && isPivotHeader(row));
-  if (pivotHeader >= 0) return parseMonthlyPivot(table, pivotHeader);
+  if (pivotHeader >= 0) return parseMonthlyPivot(table, pivotHeader, options);
   const header = table.findIndex((row, index) => index < 15 && looksLikeKeheSales(row));
-  return parseKeheSalesThrough(recordsFromTable(table, header >= 0 ? header : 0));
+  return parseKeheSalesThrough(recordsFromTable(table, header >= 0 ? header : 0), options);
 }
 
 export function looksLikeKeheSales(headers: string[]) {
@@ -153,7 +159,9 @@ function isPivotHeader(row: string[]) {
   return joined.includes("sku") && /\b(jan|january)\b/.test(joined) && /retailer|store/.test(joined);
 }
 
-function parseMonthlyPivot(table: string[][], headerIndex: number): PullResult {
+function parseMonthlyPivot(table: string[][], headerIndex: number, options: SalesParseOptions = {}): PullResult {
+  const distributor = options.distributor ?? "kehe";
+  const method = orderingMethodFor(distributor);
   const headers = table[headerIndex] ?? [];
   const yearRow = table[headerIndex - 1] ?? [];
   const months = monthColumns(yearRow, headers);
@@ -191,7 +199,7 @@ function parseMonthlyPivot(table: string[][], headerIndex: number): PullResult {
 
     const upc = skuCell.match(/\((\d{6,14})\)/)?.[1] ?? skuCell;
     const description = skuCell.replace(/\s*\([^)]*\)\s*$/, "").trim() || skuCell;
-    const externalId = stableId(["kehe", "sales-through", store]);
+    const externalId = stableId([distributor, "sales-through", store]);
     if (!seenAccounts.has(externalId)) {
       seenAccounts.add(externalId);
       accounts.push({
@@ -201,7 +209,7 @@ function parseMonthlyPivot(table: string[][], headerIndex: number): PullResult {
         region: stateFromStore(store),
         industryType: null,
         customerType: null,
-        orderingMethod: "KEHE",
+        orderingMethod: method,
       });
     }
 
@@ -210,12 +218,12 @@ function parseMonthlyPivot(table: string[][], headerIndex: number): PullResult {
       const revenue = money(row[month.index] ?? "");
       if (revenue === null || revenue === 0) continue;
       const shipDate = `${month.year}-${String(month.month).padStart(2, "0")}-01`;
-      const orderKey = stableId(["kehe", "sales-through", store, upc, shipDate]);
+      const orderKey = stableId([distributor, "sales-through", store, upc, shipDate]);
       shipments.push({ shipDate, revenue });
       orders.push({
         externalId: orderKey,
         accountExternalId: externalId,
-        orderingMethod: "KEHE" as const,
+        orderingMethod: method,
         direction: "through" as const,
         shipDate,
         revenue,
@@ -238,13 +246,13 @@ function parseMonthlyPivot(table: string[][], headerIndex: number): PullResult {
     if (shipments.length === 0) continue;
     raw.push({
       kind: "sale" as const,
-      externalId: stableId(["kehe", "pivot", store, upc, skuCell]),
+      externalId: stableId([distributor, "pivot", store, upc, skuCell]),
       payload: { retailer, store, sku: upc, description, shipments },
     });
   }
 
   return {
-    message: `Stored ${orders.length} monthly KEHE shipments across ${accounts.length} stores. This pivot has shipped dollars by month. Fill rate stays empty until a file includes cases ordered and cases shipped.`,
+    message: `Stored ${orders.length} monthly ${labelFor(distributor)} shipments across ${accounts.length} stores. This pivot has shipped dollars by month. Fill rate stays empty until a file includes cases ordered and cases shipped.`,
     rowCount: orders.length + accounts.length,
     accounts,
     orders,
@@ -281,4 +289,12 @@ function isTotalLabel(value: string) {
 function stateFromStore(name: string) {
   const match = name.match(/,\s*([A-Z]{2})\s*$/);
   return match?.[1] ?? null;
+}
+
+function orderingMethodFor(distributor: DistributorSalesSource): OrderingMethod {
+  return distributor === "unfi" ? "UNFI" : "KEHE";
+}
+
+function labelFor(distributor: DistributorSalesSource) {
+  return distributor === "unfi" ? "UNFI" : "KEHE";
 }

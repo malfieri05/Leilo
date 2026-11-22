@@ -216,6 +216,23 @@ describe("KEHE parsers", () => {
     assert.equal(parsed.orders[1]?.revenue, 63.84);
     assert.equal(parsed.orders[0]?.lines[0]?.casesOrdered, null);
   });
+
+  it("keeps UNFI ids and ordering method separate from KEHE", () => {
+    const row = {
+      Chain: "Harbor Market",
+      State: "CA",
+      "Ship Date": "2026-02-01",
+      UPC: "FG-01-RH",
+      "Shipped Dollars": "250.50",
+    };
+    const kehe = parseKeheSalesThrough([row]);
+    const unfi = parseKeheSalesThrough([row], { distributor: "unfi" });
+    assert.notEqual(kehe.orders[0]?.externalId, unfi.orders[0]?.externalId);
+    assert.notEqual(kehe.accounts[0]?.externalId, unfi.accounts[0]?.externalId);
+    assert.equal(unfi.orders[0]?.orderingMethod, "UNFI");
+    assert.equal(unfi.accounts[0]?.orderingMethod, "UNFI");
+    assert.match(unfi.message, /UNFI/);
+  });
 });
 
 function flag(input: { weeksOnHand: number; weeksOnPo: number }) {

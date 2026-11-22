@@ -49,6 +49,8 @@ export type OrderDraft = {
   tags: string;
   excludeFromDirect: boolean;
   partner: string;
+  /** Shopify order name, such as #B-2586, used to join ShipStation tracking. */
+  reference?: string | null;
   lines: LineDraft[];
 };
 
@@ -59,6 +61,8 @@ export type ShipmentDraft = {
   deliveredAt: string | null;
   carrier: string | null;
   trackingNumber: string | null;
+  trackingUrl?: string | null;
+  destination?: string | null;
   relevantUntil: string | null;
 };
 
@@ -85,6 +89,70 @@ export type SpinsRowDraft = {
   payload: Record<string, string>;
 };
 
+export type SkuCatalogDraft = {
+  catalogKey: string;
+  effectiveDate: string | null;
+  category: string;
+  itemNumber: string | null;
+  keheEsn: string | null;
+  unitUpc: string | null;
+  caseUpc: string | null;
+  gtin: string | null;
+  ranking: number | null;
+  description: string;
+  innerPack: string | null;
+  masterPack: number | null;
+  unitSize: string | null;
+  fobUnit: number | null;
+  fobInner: number | null;
+  fobCase: number | null;
+  deliveredUnit: number | null;
+  deliveredInner: number | null;
+  deliveredCase: number | null;
+  dsdUnit: number | null;
+  dsdInner: number | null;
+  dsdCase: number | null;
+  msrp: number | null;
+  logistics: Record<string, string>;
+  isFourPack: boolean;
+  format: "single" | "four-pack" | "stick";
+  supplementFactsUrl: string | null;
+  payload: string[];
+};
+
+export type PromoEventDraft = {
+  eventKey: string;
+  account: string;
+  accountType: string | null;
+  distributor: string | null;
+  channel: string;
+  year: number;
+  month: number;
+  monthLabel: string;
+  summary: string;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  rowOrder: number;
+  notes: string | null;
+};
+
+export type PromoMatrixRow = {
+  account: string;
+  accountType: string;
+  distributor: string;
+  channel: string;
+  notes: string | null;
+  cells: string[];
+};
+
+export type PromoSnapshotDraft = {
+  title: string;
+  sourceNote: string;
+  months: string[];
+  rows: PromoMatrixRow[];
+};
+
 export type PullResult = {
   message: string;
   rowCount: number;
@@ -95,6 +163,9 @@ export type PullResult = {
   raw: RawDraft[];
   inventory?: KeheInventoryDraft[];
   spinsRows?: SpinsRowDraft[];
+  skuCatalog?: SkuCatalogDraft[];
+  promoEvents?: PromoEventDraft[];
+  promoSnapshot?: PromoSnapshotDraft;
 };
 
 export type SyncState = {

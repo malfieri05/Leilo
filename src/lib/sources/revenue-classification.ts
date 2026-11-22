@@ -11,6 +11,12 @@ export const NON_REVENUE_TAG_NAMES = ["sample", "pos", "merch", "merchandise"] a
 export const NON_REVENUE_TAG_REGEX =
   "(^|,\\s*)(sample|pos|merch|merchandise)(\\s*,|$)";
 
+/** Whole-tag match for sample orders on the tracking tab. */
+export const SAMPLE_TAG_REGEX = "(^|,\\s*)sample(\\s*,|$)";
+
+/** Whole-tag match for POS and merch orders on the tracking tab. */
+export const POS_TAG_REGEX = "(^|,\\s*)(pos|merch|merchandise)(\\s*,|$)";
+
 export type SaleClassification = {
   orderingMethod: OrderingMethod;
   direction: SalesDirection;

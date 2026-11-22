@@ -10,6 +10,8 @@ import { normalizePartnerName } from "@/lib/sources/dsd/partners";
 import { parseKeheSalesFile } from "@/lib/sources/kehe/parse-sales-through";
 import { parseKeheStockStatus } from "@/lib/sources/kehe/parse-stock-status";
 import { persistBundle } from "@/lib/sources/persist";
+import { parsePromoCalendar, promoPartnerSlug } from "@/lib/sources/promo/parse-calendar";
+import { parseSkuPricelist, skuPartnerSlug } from "@/lib/sources/sku/parse-pricelist";
 import { parseSpinsExport } from "@/lib/sources/spins/parse-export";
 import {
   SPINS_PERIOD_WEEKS,
@@ -74,6 +76,25 @@ export async function importSourceFile(input: {
   }
   if (!hasDatabase()) return { ok: false, message: "DATABASE_URL is not set." };
 
+  if (input.source === "promo-calendar") {
+    try {
+      const parsed = parsePromoCalendar(input.text);
+      return execute(input.source, promoPartnerSlug(), spec.method, async () => parsed);
+    } catch (error) {
+      return { ok: false, message: publicError(error) };
+    }
+  }
+
+  if (input.source === "sku-pricelist") {
+    try {
+      const parsed = parseSkuPricelist(input.text);
+      const effectiveDate = parsed.skuCatalog?.[0]?.effectiveDate ?? null;
+      return execute(input.source, skuPartnerSlug(effectiveDate), spec.method, async () => parsed);
+    } catch (error) {
+      return { ok: false, message: publicError(error) };
+    }
+  }
+
   let rows: Record<string, string>[];
   try {
     rows = parseDelimited(input.filename, input.text);
@@ -100,11 +121,19 @@ export async function importSourceFile(input: {
       parseSpinsExport(rows, reportKind, periodWeeks),
     );
   }
-  if (input.source === "kehe") {
-    const kind = input.reportKind === "stock-status" ? "stock-status" : "sales-through";
+  if (input.source === "kehe" || input.source === "unfi") {
     if (!input.reportKind) {
-      return { ok: false, message: "Choose a KEHE report type before importing." };
+      return { ok: false, message: `Choose a ${input.source === "unfi" ? "UNFI" : "KEHE"} report type before importing.` };
     }
+    if (input.source === "unfi") {
+      if (input.reportKind !== "sales-through") {
+        return { ok: false, message: "UNFI stock status is not wired yet. Import Chains and Stores as sales-through." };
+      }
+      return execute(input.source, "sales-through", spec.method, async () =>
+        parseKeheSalesFile(input.text, { distributor: "unfi" }),
+      );
+    }
+    const kind = input.reportKind === "stock-status" ? "stock-status" : "sales-through";
     return execute(input.source, kind, spec.method, async () =>
       kind === "stock-status" ? parseKeheStockStatus(input.text) : parseKeheSalesFile(input.text),
     );
