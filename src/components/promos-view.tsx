@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Panel } from "@/components/panel";
+import { PromoCalendarMonths } from "@/components/promo-calendar-months";
 import { channelMatches, monthName, parseMonthLabel, type PromoQuery } from "@/lib/sources/promo-model";
 import type { PromoOverview } from "@/lib/sources/promo-overview";
 
 export function PromosView({ report, query }: { report: Extract<PromoOverview, { state: "ready" }>; query: PromoQuery }) {
-  const max = Math.max(1, ...report.byMonth.map((month) => month.count));
   const matrixRows = report.matrix.rows.filter((row) => channelMatches(row.channel, query.channel));
 
   return (
@@ -17,29 +17,9 @@ export function PromosView({ report, query }: { report: Extract<PromoOverview, {
         . A promo is not a sale until the ship date falls inside the window and the order is in the books.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="In view" value={String(report.summary.shown)} />
-        <Stat label="Cancelled" value={String(report.summary.cancelled)} />
-        <Stat label="KEHE" value={String(report.summary.kehe)} />
-        <Stat label="UNFI" value={String(report.summary.unfi)} />
-      </div>
-
-      <Panel title={`${query.year} by month`} action="Promotion cells">
-        <div className="flex items-end gap-2 overflow-x-auto">
-          {report.byMonth.map((month) => (
-            <div key={month.month} className="flex w-10 shrink-0 flex-col items-center gap-1">
-              <div className="flex h-28 w-full items-end rounded-[8px] bg-foam">
-                <div
-                  className={`w-full rounded-[8px] ${query.month === month.month ? "bg-heading" : "bg-lagoon"}`}
-                  style={{ height: `${Math.max(4, (month.count / max) * 100)}%` }}
-                />
-              </div>
-              <p className="text-[10px] uppercase tracking-[0.08em] text-muted">{month.label}</p>
-              <p className="text-xs tabular-nums text-heading">{month.count}</p>
-            </div>
-          ))}
-        </div>
-      </Panel>
+      {query.view === "calendar" ? (
+        <PromoCalendarMonths events={report.yearAgenda} query={query} />
+      ) : null}
 
       {query.view === "matrix" ? (
         <Panel title="Calendar matrix" action={`${matrixRows.length} accounts`}>
@@ -81,7 +61,9 @@ export function PromosView({ report, query }: { report: Extract<PromoOverview, {
             </div>
           )}
         </Panel>
-      ) : (
+      ) : null}
+
+      {query.view === "agenda" ? (
         <Panel title="Agenda" action={query.month === "all" ? String(query.year) : `${monthName(query.month)} ${query.year}`}>
           {report.agenda.length === 0 ? (
             <p className="text-sm text-muted">No promotions in this month and channel. Try All months, or upload the calendar on Sources.</p>
@@ -113,7 +95,7 @@ export function PromosView({ report, query }: { report: Extract<PromoOverview, {
             </table>
           )}
         </Panel>
-      )}
+      ) : null}
 
       <Panel title="Legend" action="From the sheet">
         <ul className="grid gap-2 text-sm text-muted sm:grid-cols-2">
@@ -136,13 +118,4 @@ function highlighted(label: string, query: PromoQuery) {
 function dates(start: string | null, end: string | null, monthLabel: string) {
   if (start && end) return `${start} – ${end}`;
   return monthLabel;
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="rounded-[10px] border border-line bg-paper p-5">
-      <p className="text-xs uppercase tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-3 font-display text-3xl text-heading">{value}</p>
-    </article>
-  );
 }

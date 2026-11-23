@@ -25,6 +25,7 @@ export type PromoOverview =
       syncedAt: string | null;
       byMonth: { month: number; label: string; count: number }[];
       agenda: PromoAgendaRow[];
+      yearAgenda: PromoAgendaRow[];
       matrix: { months: string[]; rows: PromoMatrixRow[] };
       summary: { shown: number; cancelled: number; kehe: number; unfi: number };
     };
@@ -57,8 +58,19 @@ export async function loadPromos(query: PromoQuery): Promise<PromoOverview> {
     const events = asRows(eventRows).map(toAgenda);
     const snapshot = first(snapshotRows);
     const matrix = parseMatrix(snapshot.matrix);
-    const yearEvents = events.filter((event) => event.year === query.year && channelMatches(event.channel, query.channel));
-    const agenda = yearEvents.filter((event) => query.month === "all" || event.month === query.month);
+    const yearEvents = events.filter(
+      (event) =>
+        channelMatches(event.channel, query.channel) &&
+        (event.year === query.year || event.year === query.year + 1),
+    );
+    const toRow = (event: (typeof yearEvents)[number]): PromoAgendaRow => {
+      const { year: _year, month: _month, ...row } = event;
+      return row;
+    };
+    const yearAgenda = yearEvents.map(toRow);
+    const agenda = yearEvents
+      .filter((event) => query.month === "all" || event.month === query.month)
+      .map(toRow);
     const byMonth = Array.from({ length: 12 }, (_, index) => {
       const month = index + 1;
       return {
@@ -74,6 +86,7 @@ export async function loadPromos(query: PromoQuery): Promise<PromoOverview> {
       syncedAt: text(snapshot.finished_at) || null,
       byMonth,
       agenda,
+      yearAgenda,
       matrix,
       summary: {
         shown: agenda.length,

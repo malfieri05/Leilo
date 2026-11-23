@@ -1,31 +1,43 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ScaffoldPage } from "@/components/scaffold-page";
+import { PageHeader } from "@/components/page-header";
+import { Panel } from "@/components/panel";
+import { LocatorView } from "@/components/locator-view";
+import { loadLocatorTable } from "@/lib/store-locations";
 
 export const metadata: Metadata = { title: "Store locator" };
 
 export default function LocatorPage() {
   return (
     <>
-      <ScaffoldPage
+      <PageHeader
         title="Auto-Updating Store Locator"
-        description="Doors the public site can point to. The store list is meant to refresh from the locator sheet, with region taken from the retailer address."
-        panels={[
-          {
-            title: "Doors",
-            action: "Locator sheet",
-            columns: ["Store", "City", "Region", "Channel", "Last updated"],
-            empty: "Share the store locator sheet with the service account. This list updates from that sheet.",
-          },
-        ]}
+        description="Live doors from the company Leilo locations Google Sheet. Region comes from the retailer address; map pins need coordinates."
       />
-      <p className="mt-4 text-sm text-muted">
-        The draft map of known doors is still under{" "}
-        <Link href="/map" className="text-heading underline">
-          Current pages → Map
-        </Link>
-        .
-      </p>
+      <Suspense fallback={<Panel title="Doors"><p className="text-sm text-muted">Loading locations.</p></Panel>}>
+        <LocatorBody />
+      </Suspense>
     </>
   );
+}
+
+async function LocatorBody() {
+  await connection();
+  const report = await loadLocatorTable();
+  if (report.state === "no-database") {
+    return (
+      <Panel title="Database">
+        <p className="text-sm text-muted">Add DATABASE_URL to load the Leilo locations sheet.</p>
+      </Panel>
+    );
+  }
+  if (report.state === "error") {
+    return (
+      <Panel title="Could not load locations">
+        <p className="text-sm text-muted">{report.message}</p>
+      </Panel>
+    );
+  }
+  return <LocatorView report={report} />;
 }

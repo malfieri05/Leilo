@@ -5,8 +5,10 @@ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "
 
 export const PROMO_CHANNELS = ["all", "kehe", "unfi", "direct", "dsd"] as const;
 export type PromoChannelFilter = (typeof PROMO_CHANNELS)[number];
-export const PROMO_VIEWS = ["agenda", "matrix"] as const;
+export const PROMO_VIEWS = ["calendar", "agenda", "matrix"] as const;
 export type PromoView = (typeof PROMO_VIEWS)[number];
+
+export type PromoMonthRef = { year: number; month: number };
 
 export type PromoQuery = {
   year: number;
@@ -149,10 +151,59 @@ export function parsePromoCalendarTable(rows: string[][]) {
 export function parsePromoQuery(input: Record<string, string | string[] | undefined>, today = new Date()): PromoQuery {
   const year = numberIn(one(input.year), 2020, 2035, today.getFullYear());
   const monthText = one(input.month);
-  const month = monthText === "all" ? "all" : numberIn(monthText, 1, 12, today.getMonth() + 1);
   const channel = oneOf(one(input.channel), PROMO_CHANNELS, "all");
-  const view = oneOf(one(input.view), PROMO_VIEWS, "agenda");
+  const view = oneOf(one(input.view), PROMO_VIEWS, "calendar");
+  let month: number | "all" = monthText === "all" ? "all" : numberIn(monthText, 1, 12, today.getMonth() + 1);
+  if (view === "calendar" && month === "all") {
+    month = today.getMonth() + 1;
+  }
   return { year, month, channel, view };
+}
+
+export function promoMonthPair(year: number, startMonth: number): [PromoMonthRef, PromoMonthRef] {
+  if (startMonth >= 12) return [{ year, month: 12 }, { year: year + 1, month: 1 }];
+  return [{ year, month: startMonth }, { year, month: startMonth + 1 }];
+}
+
+export function shiftPromoWindow(year: number, startMonth: number, deltaMonths: number): PromoMonthRef {
+  const anchor = year * 12 + (startMonth - 1) + deltaMonths;
+  return { year: Math.floor(anchor / 12), month: (anchor % 12) + 1 };
+}
+
+export function promoPairTitle(left: PromoMonthRef, right: PromoMonthRef) {
+  if (left.year === right.year) {
+    return `${monthName(left.month)} – ${monthName(right.month)} ${left.year}`;
+  }
+  return `${monthName(left.month)} ${left.year} – ${monthName(right.month)} ${right.year}`;
+}
+
+export function calendarStartMonth(query: PromoQuery, today = new Date()) {
+  if (typeof query.month === "number") return { year: query.year, month: query.month };
+  return { year: query.year, month: today.getMonth() + 1 };
+}
+
+export function promoEventsInWindow(
+  events: { eventKey: string; channel: string; monthLabel: string; startDate: string | null; endDate: string | null; status: string }[],
+  query: PromoQuery,
+  today = new Date(),
+) {
+  const start = calendarStartMonth(query, today);
+  const [left, right] = promoMonthPair(start.year, start.month);
+  const inRef = (ref: PromoMonthRef, event: (typeof events)[number]) => {
+    if (event.startDate && event.endDate) {
+      const needle = `${ref.year}-${String(ref.month).padStart(2, "0")}`;
+      return event.startDate.slice(0, 7) <= needle && needle <= event.endDate.slice(0, 7);
+    }
+    const parsed = parseMonthLabel(event.monthLabel);
+    return parsed?.year === ref.year && parsed?.month === ref.month;
+  };
+  const visible = events.filter((event) => inRef(left, event) || inRef(right, event));
+  return {
+    shown: visible.length,
+    cancelled: visible.filter((event) => event.status === "cancelled").length,
+    kehe: visible.filter((event) => event.channel.toLowerCase().includes("kehe")).length,
+    unfi: visible.filter((event) => event.channel.toLowerCase().includes("unfi")).length,
+  };
 }
 
 export function promoQueryString(query: PromoQuery, patch: Partial<PromoQuery> = {}, today = new Date()) {
@@ -162,7 +213,7 @@ export function promoQueryString(query: PromoQuery, patch: Partial<PromoQuery> =
   const defaultMonth = today.getMonth() + 1;
   if (next.month === "all" || next.month !== defaultMonth) params.set("month", String(next.month));
   if (next.channel !== "all") params.set("channel", next.channel);
-  if (next.view !== "agenda") params.set("view", next.view);
+  if (next.view !== "calendar") params.set("view", next.view);
   const text = params.toString();
   return text ? `?${text}` : "";
 }

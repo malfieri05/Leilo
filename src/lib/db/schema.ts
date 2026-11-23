@@ -191,6 +191,30 @@ export const schemaStatements = [
     source_note text,
     matrix jsonb NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS store_locator_doors (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL REFERENCES organizations (id),
+    sync_run_id uuid NOT NULL REFERENCES sync_runs (id),
+    door_key text NOT NULL,
+    name text NOT NULL,
+    address text,
+    city text,
+    region text,
+    channel text,
+    website text,
+    phone text,
+    hours text,
+    lat numeric(10, 6),
+    lng numeric(10, 6),
+    last_updated text,
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    UNIQUE (organization_id, door_key)
+  )`,
+  `CREATE INDEX IF NOT EXISTS store_locator_doors_org_idx
+    ON store_locator_doors (organization_id, region, channel)`,
+  `ALTER TABLE store_locator_doors ADD COLUMN IF NOT EXISTS website text`,
+  `ALTER TABLE store_locator_doors ADD COLUMN IF NOT EXISTS phone text`,
+  `ALTER TABLE store_locator_doors ADD COLUMN IF NOT EXISTS hours text`,
   `CREATE TABLE IF NOT EXISTS lead_competitors (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id uuid NOT NULL REFERENCES organizations (id),

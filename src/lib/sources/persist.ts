@@ -11,6 +11,7 @@ import type {
   PromoSnapshotDraft,
   SkuCatalogDraft,
   SpinsRowDraft,
+  StoreLocatorDoorDraft,
 } from "@/lib/sources/types";
 
 type Stored = {
@@ -23,6 +24,7 @@ type Stored = {
   skuCatalog?: SkuCatalogDraft[];
   promoEvents?: PromoEventDraft[];
   promoSnapshot?: PromoSnapshotDraft;
+  storeLocatorDoors?: StoreLocatorDoorDraft[];
 };
 
 export async function persistBundle(
@@ -58,6 +60,9 @@ export async function persistBundle(
   }
   if (input.bundle.promoSnapshot) {
     await replacePromoSnapshot(sql, input.organizationId, input.syncRunId, input.bundle.promoSnapshot);
+  }
+  if (input.bundle.storeLocatorDoors) {
+    await replaceStoreLocatorDoors(sql, input.organizationId, input.syncRunId, input.bundle.storeLocatorDoors);
   }
   await insertRaw(sql, input, input.bundle.raw);
 }
@@ -473,6 +478,65 @@ async function replacePromoEvents(sql: Sql, organizationId: string, syncRunId: s
   await sql.query(`DELETE FROM promo_events WHERE organization_id = $1 AND NOT (event_key = ANY($2::text[]))`, [
     organizationId,
     kept.map((row) => row.eventKey),
+  ]);
+}
+
+async function replaceStoreLocatorDoors(
+  sql: Sql,
+  organizationId: string,
+  syncRunId: string,
+  doors: StoreLocatorDoorDraft[],
+) {
+  const kept = dedupe(doors, (door) => door.doorKey);
+  for (const group of chunk(kept, 40)) {
+    const params: unknown[] = [];
+    const values = group.map((door, index) => {
+      const base = index * 15;
+      params.push(
+        organizationId,
+        syncRunId,
+        door.doorKey,
+        door.name,
+        door.address,
+        door.city,
+        door.region,
+        door.channel,
+        door.website,
+        door.phone,
+        door.hours,
+        door.lat,
+        door.lng,
+        door.lastUpdated,
+        JSON.stringify(door.payload),
+      );
+      const slot = (offset: number) => `$${base + offset}`;
+      return `(${slot(1)}, ${slot(2)}, ${slot(3)}, ${slot(4)}, ${slot(5)}, ${slot(6)}, ${slot(7)}, ${slot(8)}, ${slot(9)}, ${slot(10)}, ${slot(11)}, ${slot(12)}, ${slot(13)}, ${slot(14)}, ${slot(15)}::jsonb)`;
+    });
+    await sql.query(
+      `INSERT INTO store_locator_doors (
+        organization_id, sync_run_id, door_key, name, address, city, region,
+        channel, website, phone, hours, lat, lng, last_updated, payload
+      ) VALUES ${values.join(", ")}
+      ON CONFLICT (organization_id, door_key) DO UPDATE SET
+        sync_run_id = EXCLUDED.sync_run_id,
+        name = EXCLUDED.name,
+        address = EXCLUDED.address,
+        city = EXCLUDED.city,
+        region = EXCLUDED.region,
+        channel = EXCLUDED.channel,
+        website = EXCLUDED.website,
+        phone = EXCLUDED.phone,
+        hours = EXCLUDED.hours,
+        lat = EXCLUDED.lat,
+        lng = EXCLUDED.lng,
+        last_updated = EXCLUDED.last_updated,
+        payload = EXCLUDED.payload`,
+      params,
+    );
+  }
+  await sql.query(`DELETE FROM store_locator_doors WHERE organization_id = $1 AND NOT (door_key = ANY($2::text[]))`, [
+    organizationId,
+    kept.map((door) => door.doorKey),
   ]);
 }
 

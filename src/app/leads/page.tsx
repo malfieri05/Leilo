@@ -48,7 +48,7 @@ async function LeadsFrame({ searchParams }: { searchParams: Promise<Record<strin
 async function LeadsBody({ query, period, today }: { query: SalesQuery; period: ResolvedPeriod; today: string }) {
   const [report, prospects] = await Promise.all([
     loadLeads(query.region, period, today),
-    listAccounts({ source: "hubspot", prospects: true, limit: 50 }),
+    listAccounts({ prospects: true, limit: 50 }),
   ]);
   if (report.state === "no-database") {
     return (

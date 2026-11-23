@@ -1,9 +1,11 @@
 import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, type Sql } from "@/lib/db";
+import { canApiSync } from "@/lib/sources/api-pullers";
 import { sourceCatalog, sourceConfigured, specFor } from "@/lib/sources/catalog";
 import { pullGoogleSheets } from "@/lib/sources/connectors/google-sheets";
 import { pullHubSpot } from "@/lib/sources/connectors/hubspot";
 import { pullShipStation } from "@/lib/sources/connectors/shipstation";
 import { pullShopify } from "@/lib/sources/connectors/shopify";
+import { pullZoomInfo } from "@/lib/sources/connectors/zoominfo";
 import { pullSpins } from "@/lib/sources/connectors/spins";
 import { draftsFromFile, parseDelimited } from "@/lib/sources/files";
 import { normalizePartnerName } from "@/lib/sources/dsd/partners";
@@ -25,6 +27,7 @@ import type { PullResult, SyncState } from "@/lib/sources/types";
 const pullers: Record<string, () => Promise<PullResult>> = {
   shopify: pullShopify,
   hubspot: pullHubSpot,
+  zoominfo: pullZoomInfo,
   shipstation: pullShipStation,
   google_sheets: pullGoogleSheets,
   spins: pullSpins,
@@ -39,13 +42,22 @@ export async function runConnector(source: string): Promise<SyncState> {
   if (!sourceConfigured(spec)) {
     return { ok: false, message: `Set ${spec.env.join(", ")} before syncing ${spec.name}.` };
   }
+  if (!canApiSync(source)) {
+    return {
+      ok: false,
+      message:
+        spec.source === "promo-calendar"
+          ? "The live promotion calendar syncs from its Google Sheet row on Sources. Use Sync there."
+          : "That source has no connector.",
+    };
+  }
   const pull = pullers[source];
   if (!pull) return { ok: false, message: "That source has no connector." };
   return execute(source, "", spec.method, pull);
 }
 
 export async function runConfiguredSources(): Promise<SyncState> {
-  const ready = sourceCatalog.filter((spec) => spec.kind !== "file" && sourceConfigured(spec));
+  const ready = sourceCatalog.filter((spec) => spec.kind !== "file" && sourceConfigured(spec) && canApiSync(spec.source));
   if (ready.length === 0) {
     return { ok: false, message: "No API source has credentials yet." };
   }

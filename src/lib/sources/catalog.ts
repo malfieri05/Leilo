@@ -24,6 +24,13 @@ export const sourceCatalog: SourceSpec[] = [
     env: ["HUBSPOT_ACCESS_TOKEN"],
   },
   {
+    source: "zoominfo",
+    name: "ZoomInfo",
+    method: "GTM API client credentials. Company search for prospect retailers",
+    kind: "api",
+    env: ["ZOOMINFO_CLIENT_ID", "ZOOMINFO_CLIENT_SECRET"],
+  },
+  {
     source: "shipstation",
     name: "ShipStation",
     method: "API key and secret. Tracking stays relevant for 21 days after delivery",
@@ -33,7 +40,7 @@ export const sourceCatalog: SourceSpec[] = [
   {
     source: "google_sheets",
     name: "Google Sheets",
-    method: "Service account. Sheets are shared to that account",
+    method: "Service account read for each sheet id in environment variables",
     kind: "api",
     env: ["GOOGLE_SERVICE_ACCOUNT_JSON"],
   },
@@ -81,10 +88,10 @@ export const sourceCatalog: SourceSpec[] = [
   },
   {
     source: "promo-calendar",
-    name: "Promotion calendar",
-    method: "CSV export of the KEHE and UNFI promotion matrix",
-    kind: "file",
-    env: [],
+    name: "Promotion calendar (CSV)",
+    method: "KEHE and UNFI calendar export when the Google Sheet is not wired",
+    kind: "hybrid",
+    env: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_SHEET_PROMO_ID"],
   },
 ];
 
@@ -100,7 +107,7 @@ export function sourceConfigured(spec: SourceSpec) {
 }
 
 export function sheetIdsConfigured() {
-  return ["GOOGLE_SHEET_SKU_ID", "GOOGLE_SHEET_LTL_ID", "GOOGLE_SHEET_LOCATOR_ID"].filter(
+  return ["GOOGLE_SHEET_SKU_ID", "GOOGLE_SHEET_LTL_ID", "GOOGLE_SHEET_LOCATOR_ID", "GOOGLE_SHEET_PROMO_ID"].filter(
     (key) => Boolean(process.env[key]?.trim()),
   );
 }

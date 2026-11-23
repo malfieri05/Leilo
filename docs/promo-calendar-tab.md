@@ -1,6 +1,6 @@
 # Promotion Calendar
 
-KEHE and UNFI promotions for 2025–2027. Upload the calendar CSV on Sources and choose **Promotion calendar**. A new upload replaces the previous calendar.
+KEHE and UNFI promotions for 2025–2027. The live source is the Google Sheet: set `GOOGLE_SHEET_PROMO_ID` (and usually `GOOGLE_SHEET_PROMO_GID` from the tab URL) in `.env.local`, share the doc with the service account, then **Sync Google Sheets** on Sources. A CSV upload under **Promotion calendar** still works as a fallback and replaces the stored calendar.
 
 The sheet is a matrix: one row per account, one column per month. The tab unpivots each filled cell into a promotion. The vendor legend rows at the bottom are not events.
 
@@ -20,4 +20,4 @@ Cancelled, hold, submitted, and planned come from the words in the cell. Everyth
 
 ## Still open
 
-KEHE independent-east and independent-west emails are not parsed. The Google Sheet is not synced. The calendar is not joined to sales-through dollars yet.
+KEHE independent-east and independent-west emails are not parsed. The calendar is not joined to sales-through dollars yet. There is no automatic refresh on every cell edit; sync Google Sheets after material updates.

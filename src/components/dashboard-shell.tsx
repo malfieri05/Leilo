@@ -231,7 +231,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   aria-controls="workspace-nav"
                   onClick={() => setWorkspaceOpen((current) => !current)}
                 >
-                  Current pages
+                  Admin
                   <svg
                     viewBox="0 0 20 20"
                     aria-hidden="true"

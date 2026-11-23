@@ -32,7 +32,7 @@ export function LeadsView({
         ))}
       </div>
 
-      <Panel title="New leads" action="HubSpot prospects">
+      <Panel title="New leads" action="HubSpot and ZoomInfo">
         <ProspectTable prospects={prospects} />
       </Panel>
 
@@ -130,9 +130,15 @@ function UpsellPanel({ channel, rows, total }: { channel: LeadChannel; rows: Ups
 }
 
 function ProspectTable({ prospects }: { prospects: AccountList }) {
-  if (prospects.state === "no-database") return <p className="text-sm text-muted">Connect the database to list HubSpot prospects.</p>;
+  if (prospects.state === "no-database") return <p className="text-sm text-muted">Connect the database to list prospects.</p>;
   if (prospects.state === "error") return <p className="text-sm text-muted">{prospects.message}</p>;
-  if (prospects.state === "empty") return <p className="text-sm text-muted">No HubSpot prospect companies yet.</p>;
+  if (prospects.state === "empty") {
+    return (
+      <p className="text-sm text-muted">
+        No prospect companies yet. Mark companies as Prospect in HubSpot or sync ZoomInfo on Sources.
+      </p>
+    );
+  }
   return (
     <>
       <p className="mb-3 text-xs uppercase tracking-[0.14em] text-muted">{shown(prospects.rows.length, prospects.total)}</p>
@@ -140,6 +146,7 @@ function ProspectTable({ prospects }: { prospects: AccountList }) {
         <thead className="text-xs uppercase tracking-[0.14em] text-muted">
           <tr>
             <th className="py-2 font-medium">Company</th>
+            <th className="py-2 font-medium">Source</th>
             <th className="py-2 font-medium">Industry</th>
             <th className="py-2 font-medium">Region</th>
           </tr>
@@ -148,6 +155,7 @@ function ProspectTable({ prospects }: { prospects: AccountList }) {
           {prospects.rows.map((row) => (
             <tr key={row.externalId} className="border-t border-line">
               <td className="py-2 text-heading">{row.name}</td>
+              <td className="py-2 text-muted">{sourceLabel(row.source)}</td>
               <td className="py-2 text-muted">{row.industryType || "Needs a type"}</td>
               <td className="py-2 text-muted">{row.region || "—"}</td>
             </tr>
@@ -182,6 +190,12 @@ function EmptyChannel({ channel }: { channel: LeadChannel }) {
     );
   }
   return <p className="text-sm text-muted">No Direct accounts in this window for the selected region.</p>;
+}
+
+function sourceLabel(source: string) {
+  if (source === "zoominfo") return "ZoomInfo";
+  if (source === "hubspot") return "HubSpot";
+  return source;
 }
 
 function shown(visible: number, total: number) {

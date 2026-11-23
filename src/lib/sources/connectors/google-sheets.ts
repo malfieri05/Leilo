@@ -1,23 +1,23 @@
 import { createSign } from "node:crypto";
+import { a1Range, resolveSheetTitle, valuesToCsv } from "@/lib/sources/google-sheets/sheet-values";
 import { emptyPull } from "@/lib/sources/persist";
 import { ltlShipmentsFromRecords } from "@/lib/sources/ltl/parse-kehe-tab";
+import { parseLocatorSheet } from "@/lib/sources/locator/parse-locator-sheet";
+import { parsePromoCalendar } from "@/lib/sources/promo/parse-calendar";
+import { sheetConnectorJobs } from "@/lib/sources/google-sheet-feeds";
 import type { PullResult } from "@/lib/sources/types";
 
 type ServiceAccount = { client_email: string; private_key: string };
 type SheetValues = { values?: string[][] };
 
-const SHEETS = [
-  { env: "GOOGLE_SHEET_SKU_ID", label: "SKU and price list", kind: "reference" as const },
-  { env: "GOOGLE_SHEET_LTL_ID", label: "LTL bill of lading", kind: "shipment" as const },
-  { env: "GOOGLE_SHEET_LOCATOR_ID", label: "store locator", kind: "reference" as const },
-];
+const SHEETS = sheetConnectorJobs();
 
 export async function pullGoogleSheets(): Promise<PullResult> {
   const account = readServiceAccount();
   const configured = SHEETS.filter((sheet) => process.env[sheet.env]?.trim());
   if (configured.length === 0) {
     return emptyPull(
-      "The service account is set. Add GOOGLE_SHEET_SKU_ID, GOOGLE_SHEET_LTL_ID, and GOOGLE_SHEET_LOCATOR_ID for the sheets shared to that account.",
+      "The service account is set. Add sheet ids such as GOOGLE_SHEET_SKU_ID, GOOGLE_SHEET_LTL_ID, GOOGLE_SHEET_LOCATOR_ID, and GOOGLE_SHEET_PROMO_ID for documents shared to that account.",
       true,
     );
   }
@@ -28,6 +28,28 @@ export async function pullGoogleSheets(): Promise<PullResult> {
 
   for (const sheet of configured) {
     const id = process.env[sheet.env]?.trim() ?? "";
+    if (sheet.kind === "promo") {
+      const tab = await resolveSheetTitle(token, id, promoTabHint());
+      const values = await readSheet(token, id, account.client_email, sheet.label, a1Range(tab, "AZ"));
+      const parsed = parsePromoCalendar(valuesToCsv(values));
+      result.promoEvents = parsed.promoEvents;
+      result.promoSnapshot = parsed.promoSnapshot;
+      result.raw.push(...parsed.raw);
+      notes.push(`${sheet.label}: synced tab "${tab}" (${parsed.promoEvents?.length ?? 0} promotion cells).`);
+      continue;
+    }
+
+    if (sheet.kind === "locator") {
+      const tab = await resolveSheetTitle(token, id, locatorTabHint());
+      const values = await readSheet(token, id, account.client_email, sheet.label, a1Range(tab, "AZ"));
+      const records = rowsFromValues(values);
+      const parsed = parseLocatorSheet(records);
+      result.storeLocatorDoors = parsed.storeLocatorDoors;
+      result.raw.push(...parsed.raw);
+      notes.push(`${sheet.label}: synced tab "${tab}" (${parsed.storeLocatorDoors.length} doors).`);
+      continue;
+    }
+
     const range = sheet.kind === "shipment" ? ltlRange() : "A:Z";
     const values = await readSheet(token, id, account.client_email, sheet.label, range);
     const records = rowsFromValues(values);
@@ -49,7 +71,9 @@ export async function pullGoogleSheets(): Promise<PullResult> {
     }
   }
 
-  result.rowCount = result.shipments.length + result.raw.length;
+  const promoCount = result.promoEvents?.length ?? 0;
+  const doorCount = result.storeLocatorDoors?.length ?? 0;
+  result.rowCount = result.shipments.length + result.raw.length + promoCount + doorCount;
   result.message = notes.join(" ");
   return result;
 }
@@ -104,6 +128,24 @@ async function accessToken(account: ServiceAccount) {
   const body = (await response.json()) as { access_token?: string };
   if (!body.access_token) throw new Error("Google did not return an access token.");
   return body.access_token;
+}
+
+function locatorTabHint() {
+  const gidRaw = process.env.GOOGLE_SHEET_LOCATOR_GID?.trim() ?? "";
+  const gid = gidRaw ? Number(gidRaw) : null;
+  return {
+    title: process.env.GOOGLE_SHEET_LOCATOR_TAB?.trim() || null,
+    gid: gid != null && Number.isFinite(gid) ? gid : null,
+  };
+}
+
+function promoTabHint() {
+  const gidRaw = process.env.GOOGLE_SHEET_PROMO_GID?.trim() ?? "";
+  const gid = gidRaw ? Number(gidRaw) : null;
+  return {
+    title: process.env.GOOGLE_SHEET_PROMO_TAB?.trim() || null,
+    gid: gid != null && Number.isFinite(gid) ? gid : null,
+  };
 }
 
 function ltlTabName() {

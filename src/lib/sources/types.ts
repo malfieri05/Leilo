@@ -153,6 +153,22 @@ export type PromoSnapshotDraft = {
   rows: PromoMatrixRow[];
 };
 
+export type StoreLocatorDoorDraft = {
+  doorKey: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  region: string | null;
+  channel: string | null;
+  website: string | null;
+  phone: string | null;
+  hours: string | null;
+  lat: number | null;
+  lng: number | null;
+  lastUpdated: string | null;
+  payload: Record<string, string>;
+};
+
 export type PullResult = {
   message: string;
   rowCount: number;
@@ -166,6 +182,7 @@ export type PullResult = {
   skuCatalog?: SkuCatalogDraft[];
   promoEvents?: PromoEventDraft[];
   promoSnapshot?: PromoSnapshotDraft;
+  storeLocatorDoors?: StoreLocatorDoorDraft[];
 };
 
 export type SyncState = {

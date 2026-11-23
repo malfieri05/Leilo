@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
+import { SourceInfoLink } from "@/components/source-info-link";
 import { ImportForm, SyncAllButton, SyncButton } from "@/components/source-actions";
 import { fileSources } from "@/lib/sources/catalog";
 import { listSources } from "@/lib/sources/status";
@@ -54,7 +55,14 @@ async function SourcesBody() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.key} className="border-t border-line align-top">
-                  <td className="py-3 font-medium">{row.name}</td>
+                  <td className="py-3 font-medium">
+                    <span className="inline-flex items-center gap-0.5">
+                      {row.name}
+                      {row.infoLink ? (
+                        <SourceInfoLink href={row.infoLink.url} label={row.infoLink.label} />
+                      ) : null}
+                    </span>
+                  </td>
                   <td className="max-w-xs py-3 text-muted">{row.method}</td>
                   <td className="py-3">
                     <span className="block">{row.status}</span>
@@ -65,7 +73,7 @@ async function SourcesBody() {
                     {row.kind === "file" ? (
                       <span className="text-xs uppercase tracking-[0.08em] text-muted">Upload below</span>
                     ) : (
-                      <SyncButton source={row.source} disabled={!row.canSync} />
+                      <SyncButton source={row.syncSource} disabled={!row.canSync} />
                     )}
                   </td>
                 </tr>

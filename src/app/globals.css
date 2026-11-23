@@ -71,3 +71,159 @@ h2,
 .store-map .leaflet-interactive {
   cursor: pointer;
 }
+
+.store-map .leaflet-popup-content {
+  margin: 14px 16px 12px;
+  width: 268px !important;
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+}
+
+.store-map .leaflet-popup-content .door-popup svg {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+}
+
+.store-map .door-popup-wrapper .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.store-map .leaflet-popup-content .door-popup {
+  width: 100%;
+}
+
+.store-map .leaflet-popup-content .door-popup-name {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.store-map .leaflet-popup-content .door-line,
+.store-map .leaflet-popup-content .door-hours summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 -6px;
+  padding: 8px 6px;
+  color: #3c4043;
+  font-size: 13px;
+  line-height: 1.35;
+  list-style: none;
+  border-radius: 8px;
+  transition: background-color 0.18s ease;
+}
+
+.store-map .leaflet-popup-content .door-line:hover,
+.store-map .leaflet-popup-content .door-hours summary:hover {
+  background-color: rgba(26, 115, 232, 0.07);
+}
+
+.store-map .leaflet-popup-content .door-line {
+  cursor: default;
+}
+
+.store-map .leaflet-popup-content .door-line--link {
+  cursor: pointer;
+}
+
+.store-map .leaflet-popup-content .door-hours {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #e8eaed;
+}
+
+.store-map .leaflet-popup-content .door-hours summary {
+  cursor: pointer;
+  align-items: center;
+}
+
+.store-map .leaflet-popup-content .door-hours-summary-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.store-map .leaflet-popup-content .door-chevron {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.store-map .leaflet-popup-content .door-hours[open] .door-chevron {
+  transform: rotate(180deg);
+}
+
+.store-map .leaflet-popup-content .door-hours summary::-webkit-details-marker {
+  display: none;
+}
+
+.store-map .leaflet-popup-content .door-hours summary::marker {
+  content: "";
+}
+
+.store-map .leaflet-popup-content .door-hours-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.store-map .leaflet-popup-content .door-hours[open] .door-hours-expand {
+  grid-template-rows: 1fr;
+}
+
+.store-map .leaflet-popup-content .door-icon {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px;
+  margin-top: 1px;
+}
+
+.store-map .leaflet-popup-content .door-line-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.store-map .leaflet-popup-content .door-line a {
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.store-map .leaflet-popup-content .door-status {
+  font-weight: 600;
+}
+
+.store-map .leaflet-popup-content .door-hours-week {
+  min-height: 0;
+  overflow: hidden;
+  margin: 0 0 2px 28px;
+  padding-top: 0;
+  display: grid;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.store-map .leaflet-popup-content .door-hours[open] .door-hours-week {
+  padding-top: 6px;
+  padding-bottom: 4px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.store-map .leaflet-popup-content .door-hours-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: #3c4043;
+}

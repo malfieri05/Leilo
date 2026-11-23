@@ -15,6 +15,11 @@ export async function syncSourceAction(_prev: SyncState, formData: FormData): Pr
   revalidatePath("/sales");
   revalidatePath("/spins");
   revalidatePath("/tracking");
+  revalidatePath("/leads");
+  revalidatePath("/accounts");
+  revalidatePath("/promos");
+  revalidatePath("/locator");
+  revalidatePath("/map");
   return result;
 }
 
@@ -47,6 +52,8 @@ export async function importFileAction(_prev: SyncState, formData: FormData): Pr
   revalidatePath("/spins");
   revalidatePath("/skus");
   revalidatePath("/promos");
+  revalidatePath("/locator");
+  revalidatePath("/map");
   revalidatePath("/tracking");
   return result;
 }

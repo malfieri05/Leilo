@@ -6,7 +6,7 @@ import { Panel } from "@/components/panel";
 import { PromosFilters } from "@/components/promos-filters";
 import { PromosView } from "@/components/promos-view";
 import { loadPromos } from "@/lib/sources/promo-overview";
-import { parsePromoQuery, promoQueryString } from "@/lib/sources/promo-model";
+import { parsePromoQuery, promoEventsInWindow, promoQueryString } from "@/lib/sources/promo-model";
 
 export const metadata: Metadata = { title: "Promotion calendar" };
 
@@ -15,7 +15,7 @@ export default function PromosPage({ searchParams }: PageProps<"/promos">) {
     <>
       <PageHeader
         title="Promotion Calendar"
-        description="KEHE and UNFI promotions for the year, as a month agenda or the full calendar matrix."
+        description="KEHE and UNFI promotions in a two-month calendar, agenda list, or full matrix."
       />
       <Suspense fallback={<Panel title="Promotions"><p className="text-sm text-muted">Loading the calendar.</p></Panel>}>
         <PromosFrame searchParams={searchParams} />
@@ -43,9 +43,12 @@ async function PromosFrame({ searchParams }: { searchParams: Promise<Record<stri
       </Panel>
     );
   }
+  const counts =
+    query.view === "calendar" ? promoEventsInWindow(report.yearAgenda, query, today) : report.summary;
+
   return (
     <>
-      <PromosFilters key={promoQueryString(query, {}, today)} query={query} />
+      <PromosFilters key={promoQueryString(query, {}, today)} query={query} counts={counts} />
       <PromosView report={report} query={query} />
     </>
   );

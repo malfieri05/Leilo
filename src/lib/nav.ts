@@ -10,12 +10,11 @@ export const primaryNav = [
   { href: "/promos", label: "Promotion Calendar", hint: "Windows and channels" },
   { href: "/unfi", label: "UNFI", hint: "Same shape as KEHE" },
   { href: "/tracking", label: "Sample / Order Tracking", hint: "Shipments and samples" },
-  { href: "/locator", label: "Auto-Updating Store Locator", hint: "Doors from the sheet" },
+  { href: "/locator", label: "Auto-Updating Store Locator", hint: "Leilo locations sheet" },
 ] as const;
 
 export const workspaceNav = [
-  { href: "/", label: "Overview", hint: "Week at a glance" },
-  { href: "/sources", label: "Sources", hint: "Connections and syncs" },
+  { href: "/sources", label: "Data Sources", hint: "Connections and syncs" },
   { href: "/map", label: "Map", hint: "Doors and coverage" },
   { href: "/pipeline", label: "Pipeline", hint: "Deals and openings" },
   { href: "/accounts", label: "Accounts", hint: "Retail and on-prem" },

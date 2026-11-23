@@ -24,4 +24,4 @@ Among Active accounts, the top 30% by period revenue inside their Industry Type,
 
 ## New leads
 
-HubSpot companies marked Prospect are listed, capped at 50. Competitor names start with Kaviva, Melo, Kava Haven, and Recess. Weston can add a name. Store locators are not scraped, and lookalike matching is not built.
+HubSpot companies marked Prospect and ZoomInfo prospect accounts from Sources sync are listed together, capped at 50. Competitor names start with Kaviva, Melo, Kava Haven, and Recess. Weston can add a name. Store locators are not scraped. ZoomInfo company search is wired; lookalike scoring is not built.
