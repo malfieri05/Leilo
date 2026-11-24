@@ -16,7 +16,7 @@ export function SyncButton({ source, disabled }: { source: string; disabled: boo
       <button type="submit" className={buttonClass} disabled={disabled || pending}>
         {pending ? "Syncing" : "Sync"}
       </button>
-      {state ? <ActionNote state={state} /> : null}
+      {state && !state.ok ? <ActionNote state={state} /> : null}
     </form>
   );
 }
@@ -29,7 +29,7 @@ export function SyncAllButton({ disabled }: { disabled: boolean }) {
       <button type="submit" className={buttonClass} disabled={disabled || pending}>
         {pending ? "Syncing" : "Sync configured sources"}
       </button>
-      {state ? <ActionNote state={state} /> : null}
+      {state && !state.ok ? <ActionNote state={state} /> : null}
     </form>
   );
 }

@@ -4,8 +4,8 @@ import { classifyShopifyWholesaleOrder } from "@/lib/sources/revenue-classificat
 import type { PullResult } from "@/lib/sources/types";
 
 const API_VERSION = "2026-10";
-/** 250 orders/page; loop until Shopify stops sending `next` (~62 pages for 15k orders). */
-const PAGE_LIMIT = 80;
+/** 250 orders/page; loop until Shopify stops sending `next`. Needs read_all_orders on the Shopify app. */
+const PAGE_LIMIT = 120;
 
 type ShopifyOrder = {
   id: number;
@@ -23,7 +23,13 @@ type ShopifyOrder = {
     quantity?: number;
     price?: string;
   }[];
-  shipping_address?: { address1?: string; city?: string; province_code?: string; zip?: string };
+  shipping_address?: {
+    company?: string | null;
+    address1?: string;
+    city?: string;
+    province_code?: string;
+    zip?: string;
+  };
   customer?: { id?: number; first_name?: string; last_name?: string; email?: string };
 };
 
@@ -40,13 +46,15 @@ export async function pullShopify(): Promise<PullResult> {
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
+    const account = accountFrom(order);
     const classification = classifyShopifyWholesaleOrder({
       tags,
       note: order.note ?? null,
       orderName: order.name ?? null,
       cancelled: Boolean(order.cancelled_at),
+      customerName: account?.name ?? null,
+      shippingCompany: order.shipping_address?.company ?? null,
     });
-    const account = accountFrom(order);
     if (account) result.accounts.push(account);
     const shipDate = (order.processed_at || order.created_at || "").slice(0, 10) || null;
     const revenue = classification.countsInRevenue ? numberOrNull(order.total_price) : 0;
@@ -61,7 +69,7 @@ export async function pullShopify(): Promise<PullResult> {
       tags: tags.join(", "),
       excludeFromDirect: classification.excludeFromDirect,
       reference: blankToNull(order.name),
-      partner: "",
+      partner: classification.partnerSlug ?? "",
       lines: (order.line_items ?? []).map((line) => ({
         sku: blankToNull(line.sku),
         productType: blankToNull(line.title),

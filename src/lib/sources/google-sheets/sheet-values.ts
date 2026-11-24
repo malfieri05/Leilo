@@ -27,7 +27,16 @@ export async function resolveSheetTitle(
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties`;
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error(`Could not read spreadsheet tabs (${response.status}).`);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+    const detail = body?.error?.message ?? "";
+  if (response.status === 400 && /office file/i.test(detail)) {
+    throw new Error(
+      "That file is an Excel (.xlsx) upload, not a native Google Sheet. In Google: File → Save as Google Sheets, share the new file with the service account, and update GOOGLE_SHEET_KEHE_SALES_ID.",
+    );
+  }
+    throw new Error(`Could not read spreadsheet tabs (${response.status}).${detail ? ` ${detail}` : ""}`);
+  }
   const body = (await response.json()) as SpreadsheetMeta;
   const sheets = body.sheets ?? [];
 

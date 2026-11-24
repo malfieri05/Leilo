@@ -1,10 +1,20 @@
 # DSD tab
 
-This tab is DSD partners’ sales **through** to retailers. Upload each partner’s CSV on Sources and type that partner’s name. ARK stores the name as a stable slug, so “Gold Coast” and “gold coast” stay one distributor.
+This tab is DSD partners’ sales **through** to retailers. Leilo’s Shopify invoice **to** a DSD partner stays on Sales Overview.
 
-Leilo’s Shopify invoice **to** a DSD partner stays on Sales Overview. It does not appear here.
+## Live sync (Google Drive)
 
-Do not store portal passwords in the repo. MexCor and DSD Link logins stay in a password manager. Encompass stays a file upload until PartnerLink exists.
+Share **ALL SALES REPORTS** with the ARK service account. Each **subfolder** is one DSD partner. Sync on Sources → **DSD partners** reads the **newest** spreadsheet or Excel file in each folder.
+
+Default folder id (override with `GOOGLE_DRIVE_DSD_REPORTS_FOLDER_ID`): `1oaDSJkEOTiYO-61gbZFQx068Rff9eN1P`. Partner folders with no file yet are skipped; the tab still works for partners that have data.
+
+Native **Google Sheets** work best. Excel (`.xlsx`) on Drive is also supported. Excel-only previews in Drive (not converted to Google Sheets) may fail — use **Save as Google Sheets** or upload CSV.
+
+## Manual CSV
+
+Upload each partner’s CSV on Sources and type that partner’s name. ARK stores the name as a stable slug.
+
+Do not store portal passwords in the repo.
 
 ## Columns the file can use
 

@@ -1,6 +1,13 @@
 # KEHE Connect columns
 
-KEHE has no supplier API in this app. Export the report from KEHE Connect as CSV (Excel workbooks must be saved as CSV first), then import it on Sources with the matching report type. Do not store Connect passwords in the repo.
+KEHE has no supplier API in this app. Use either:
+
+1. **Google Sheet (live):** Share the workbook with the ARK service account, set `GOOGLE_SHEET_KEHE_SALES_ID` (and optionally stock id), then **Sync** on **Google Sheets** on Sources.
+2. **CSV upload:** Export from Connect or download the sheet as CSV, then import on Sources → KEHE with the matching report type.
+
+Do not store Connect passwords in the repo.
+
+ARK Brain defaults: [KEHE sales workbook](https://docs.google.com/spreadsheets/d/1yJktDvRMk6alJVyaSDvTx3mv4vgCoObu/edit), [stock status workbook](https://docs.google.com/spreadsheets/d/1ps0wXg1Zi5JGnOIgmZ5OtBGpDvH4OufX/edit). Copy each spreadsheet id from the URL (`/d/THIS_PART/edit`). Copy the tab id from `#gid=THIS_NUMBER` into `GOOGLE_SHEET_KEHE_*_GID` when the pivot is not the first tab.
 
 ## Chains and Stores that ordered an Item
 

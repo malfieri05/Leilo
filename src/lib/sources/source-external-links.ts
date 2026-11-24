@@ -1,4 +1,7 @@
+import { dsdDriveFolderLink, dsdDriveLive } from "@/lib/sources/dsd/dsd-connection";
+import { driveFolderUrl } from "@/lib/sources/google/drive-list";
 import { feedSheetUrl, googleSheetEditUrl, GOOGLE_SHEET_FEEDS } from "@/lib/sources/google-sheet-feeds";
+import { spinsApiLive, spinsDriveFolderId, spinsDriveLive } from "@/lib/sources/spins/spins-connection";
 
 export type SourceInfoLink = { url: string; label: string };
 
@@ -21,10 +24,19 @@ export function infoLinkForCatalogSource(source: string, partner: string): Sourc
     case "shipstation":
       return { url: "https://ss.shipstation.com/", label: "Open ShipStation" };
     case "spins": {
-      const api = process.env.SPINS_API_URL?.trim();
-      if (api?.startsWith("http")) return { url: api, label: "Open SPINS API" };
+      if (spinsDriveLive()) {
+        return { url: driveFolderUrl(spinsDriveFolderId()), label: "Open SPINS Data Drive folder" };
+      }
+      if (spinsApiLive()) {
+        const api = process.env.SPINS_API_URL?.trim();
+        if (api?.startsWith("http")) return { url: api, label: "Open SPINS API" };
+      }
       return { url: "https://www.spins.com/", label: "Open SPINS" };
     }
+    case "dsd":
+      return dsdDriveLive()
+        ? { url: dsdDriveFolderLink(), label: "Open ALL SALES REPORTS folder" }
+        : null;
     case "kehe":
       return { url: "https://connect.kehe.com/", label: "Open KEHE Connect" };
     case "unfi":

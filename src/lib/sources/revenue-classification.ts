@@ -1,4 +1,5 @@
 import { isB2bOrderId } from "@/lib/sources/fields";
+import { matchSalesToShipTo } from "@/lib/sources/sales-to-registry";
 import type { OrderingMethod, SalesDirection } from "@/lib/sources/types";
 
 /** Documented in docs/b2b-sales-context.md (Tracking). Match whole tags case-insensitively. */
@@ -25,6 +26,8 @@ export type SaleClassification = {
   countsInRevenue: boolean;
   reviewReason: string | null;
   nonRevenueReason: string | null;
+  /** DSD partner slug when sales-to matched a distributor account. */
+  partnerSlug: string | null;
 };
 
 export function classifyShopifyWholesaleOrder(input: {
@@ -32,29 +35,30 @@ export function classifyShopifyWholesaleOrder(input: {
   note: string | null;
   orderName: string | null;
   cancelled: boolean;
+  customerName?: string | null;
+  shippingCompany?: string | null;
 }): SaleClassification {
   const blob = buildBlob(input.tags, input.note);
   const nonRevenueReason = nonRevenueTagReason(input.tags);
 
   if (input.cancelled) {
-    return {
-      orderingMethod: "Unclassified",
-      direction: "direct",
-      excludeFromDirect: true,
-      countsInRevenue: false,
-      reviewReason: "Cancelled order",
-      nonRevenueReason: null,
-    };
+    return salesToUnclassified(false, "Cancelled order", null, null);
   }
 
   if (nonRevenueReason) {
+    return salesToUnclassified(false, null, nonRevenueReason, null);
+  }
+
+  const shipTo = matchSalesToShipTo(input.customerName, input.shippingCompany);
+  if (shipTo) {
     return {
-      orderingMethod: "Unclassified",
-      direction: "direct",
+      orderingMethod: shipTo.orderingMethod,
+      direction: "to",
       excludeFromDirect: true,
-      countsInRevenue: false,
+      countsInRevenue: true,
       reviewReason: null,
-      nonRevenueReason,
+      nonRevenueReason: null,
+      partnerSlug: shipTo.partnerSlug,
     };
   }
 
@@ -65,8 +69,9 @@ export function classifyShopifyWholesaleOrder(input: {
       direction: "to",
       excludeFromDirect: true,
       countsInRevenue: true,
-      reviewReason: null,
+      reviewReason: `Tag/note match for ${channel}`,
       nonRevenueReason: null,
+      partnerSlug: channel === "DSD" ? "tag-dsd" : channel.toLowerCase(),
     };
   }
 
@@ -78,6 +83,7 @@ export function classifyShopifyWholesaleOrder(input: {
       countsInRevenue: true,
       reviewReason: "Distributor tag without KEHE, UNFI, or DSD channel",
       nonRevenueReason: null,
+      partnerSlug: null,
     };
   }
 
@@ -89,16 +95,27 @@ export function classifyShopifyWholesaleOrder(input: {
       countsInRevenue: true,
       reviewReason: null,
       nonRevenueReason: null,
+      partnerSlug: null,
     };
   }
 
+  return salesToUnclassified(true, "Ship-to not on distributor list; no Direct signal", null, null);
+}
+
+function salesToUnclassified(
+  countsInRevenue: boolean,
+  reviewReason: string | null,
+  nonRevenueReason: string | null,
+  partnerSlug: string | null,
+): SaleClassification {
   return {
     orderingMethod: "Unclassified",
     direction: "direct",
     excludeFromDirect: true,
-    countsInRevenue: true,
-    reviewReason: "No channel keyword or confident Direct signal",
-    nonRevenueReason: null,
+    countsInRevenue,
+    reviewReason,
+    nonRevenueReason,
+    partnerSlug,
   };
 }
 

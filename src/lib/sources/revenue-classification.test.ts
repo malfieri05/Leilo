@@ -9,7 +9,32 @@ import {
 import { buildKpis, type RevenueRow } from "@/lib/sources/revenue";
 
 describe("classifyShopifyWholesaleOrder", () => {
-  it("classifies KEHE as sales to distributor", () => {
+  it("classifies KEHE by ship-to before tags", () => {
+    const shipTo = classifyShopifyWholesaleOrder({
+      tags: [],
+      note: null,
+      orderName: "#B-1001",
+      cancelled: false,
+      customerName: "KeHE Distributors",
+    });
+    assert.equal(shipTo.orderingMethod, "KEHE");
+    assert.equal(shipTo.partnerSlug, "kehe");
+  });
+
+  it("classifies DSD partner from shipping company", () => {
+    const result = classifyShopifyWholesaleOrder({
+      tags: [],
+      note: null,
+      orderName: null,
+      cancelled: false,
+      customerName: "Retail Buyer",
+      shippingCompany: "Gold Coast Distribution",
+    });
+    assert.equal(result.orderingMethod, "DSD");
+    assert.equal(result.partnerSlug, "gold-coast");
+  });
+
+  it("classifies KEHE as sales to distributor via tag fallback", () => {
     const result = classifyShopifyWholesaleOrder({
       tags: ["KEHE"],
       note: null,
@@ -62,7 +87,7 @@ describe("classifyShopifyWholesaleOrder", () => {
     });
     assert.equal(result.orderingMethod, "Unclassified");
     assert.equal(result.excludeFromDirect, true);
-    assert.match(result.reviewReason ?? "", /No channel/);
+    assert.match(result.reviewReason ?? "", /Ship-to|Direct signal/);
   });
 
   it("treats B2B order names as confident Direct", () => {

@@ -14,11 +14,19 @@ export function SpinsView({
   report,
   query,
   apiConfigured,
+  driveConfigured,
 }: {
   report: Extract<SpinsOverview, { state: "ready" }>;
   query: SpinsQuery;
   apiConfigured: boolean;
+  driveConfigured: boolean;
 }) {
+  const sourceNote = driveConfigured
+    ? "The SPINS Data Google Drive folder is wired — use Sync on Sources to refresh every matched spreadsheet."
+    : apiConfigured
+      ? "The Data Access API credentials are set."
+      : "Upload extracts on Sources, or wire the SPINS Data Drive folder with the service account.";
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted">
@@ -27,7 +35,7 @@ export function SpinsView({
         <Link href="/sources" className="font-semibold text-heading underline">
           Sources
         </Link>
-        . {apiConfigured ? "The Data Access API credentials are set." : "The Data Access API is not configured, so this tab reads files."}{" "}
+        . {sourceNote}{" "}
         {report.release?.syncedAt ? `This ${reportLabel(query.report)} ${query.weeks}-week file was stored ${when(report.release.syncedAt)}.` : "No file is stored for this report and window yet."}
       </p>
 

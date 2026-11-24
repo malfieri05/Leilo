@@ -26,9 +26,10 @@ export function DsdView({
       <p className="text-sm text-muted">
         {hasSales ? "Reports already in ARK are included below." : "No partner reports are stored yet."}{" "}
         <Link href="/sources" className="font-semibold text-heading underline">
-          Upload a CSV on Sources
+          Sync DSD partners on Sources
         </Link>
-        . Use the same partner name each time. Industry Type comes from a same-name HubSpot company.
+        {" "}
+        or upload a CSV per partner. Industry Type comes from a same-name HubSpot company.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">

@@ -16,7 +16,7 @@ export default function SalesOverviewPage({ searchParams }: PageProps<"/sales">)
     <>
       <PageHeader
         title="Sales Overview"
-        description="Wholesale health at a glance. Revenue is by ship date and includes Leilo’s sales to KEHE, UNFI, and DSD. Account health is as of today."
+        description="Shopify invoice view (sales to retailers and distributors). KEHE and DSD tabs show sales through to stores. Revenue uses ship date; account health is retailer-only, as of today."
       />
       <Suspense fallback={<OverviewFallback />}>
         <SalesFrame searchParams={searchParams} />

@@ -66,6 +66,18 @@ const aliases = new Map<string, string>([
   ["empire", "empire"],
   ["empire beverage", "empire"],
   ["john lenore", "john-lenore"],
+  ["craft collective homegrown", "craft-collective"],
+  ["cchg", "craft-collective"],
+  ["alabev", "alabev"],
+  ["gusto distributing", "gusto"],
+  ["gusto", "gusto"],
+  ["mission sales", "mission"],
+  ["my beverage company", "my-beverage"],
+  ["my beverage", "my-beverage"],
+  ["cali sober distribution", "cali-sober"],
+  ["cali sober", "cali-sober"],
+  ["botanical channel", "botanical-channel"],
+  ["kmt distribution", "kmt"],
 ]);
 
 export function normalizePartnerName(input: string) {

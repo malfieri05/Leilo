@@ -38,6 +38,22 @@ export const GOOGLE_SHEET_FEEDS: GoogleSheetFeed[] = [
     gidEnv: "GOOGLE_SHEET_LOCATOR_GID",
     method: "Company store list — address, channel, and coordinates",
   },
+  {
+    id: "kehe-sales",
+    name: "KEHE sales-through (Google Sheet)",
+    syncLabel: "KEHE sales-through",
+    sheetEnv: "GOOGLE_SHEET_KEHE_SALES_ID",
+    gidEnv: "GOOGLE_SHEET_KEHE_SALES_GID",
+    method: "Pivot or Chains and Stores — sales through to retailers",
+  },
+  {
+    id: "kehe-stock",
+    name: "KEHE stock status (Google Sheet)",
+    syncLabel: "KEHE stock status",
+    sheetEnv: "GOOGLE_SHEET_KEHE_STOCK_ID",
+    gidEnv: "GOOGLE_SHEET_KEHE_STOCK_GID",
+    method: "DC inventory for the KEHE tab stock chart",
+  },
 ];
 
 export function googleSheetEditUrl(sheetId: string, gid?: string | null) {

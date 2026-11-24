@@ -8,6 +8,7 @@ import { SpinsFilters } from "@/components/spins-filters";
 import { SpinsView } from "@/components/spins-view";
 import { loadSpins } from "@/lib/sources/spins-overview";
 import { parseSpinsQuery, spinsQueryString, type SpinsQuery } from "@/lib/sources/spins-model";
+import { spinsDriveLive } from "@/lib/sources/spins/spins-connection";
 
 export const metadata: Metadata = { title: "SPINS Data" };
 
@@ -16,7 +17,7 @@ export default function SpinsPage({ searchParams }: PageProps<"/spins">) {
     <>
       <PageHeader
         title="SPINS Data"
-        description="Category scan dollars from Brand Rank, Item Rank, and the Sprouts item matrix. 4-packs and items under $2,000 stay out of the view."
+        description="Category scan dollars from Brand Rank, Item Rank, and the Sprouts item matrix. Sync from the SPINS Data Google Drive folder on Sources, or upload extracts. 4-packs and items under $2,000 stay out of the view."
       />
       <Suspense fallback={<SpinsFallback />}>
         <SpinsFrame searchParams={searchParams} />
@@ -29,17 +30,26 @@ async function SpinsFrame({ searchParams }: { searchParams: Promise<Record<strin
   await connection();
   const query = parseSpinsQuery(await searchParams);
   const apiConfigured = Boolean(process.env.SPINS_API_KEY?.trim() && process.env.SPINS_API_URL?.trim());
+  const driveConfigured = spinsDriveLive();
   return (
     <>
       <SpinsFilters key={spinsQueryString(query)} query={query} />
       <Suspense fallback={<SpinsFallback />}>
-        <SpinsBody query={query} apiConfigured={apiConfigured} />
+        <SpinsBody query={query} apiConfigured={apiConfigured} driveConfigured={driveConfigured} />
       </Suspense>
     </>
   );
 }
 
-async function SpinsBody({ query, apiConfigured }: { query: SpinsQuery; apiConfigured: boolean }) {
+async function SpinsBody({
+  query,
+  apiConfigured,
+  driveConfigured,
+}: {
+  query: SpinsQuery;
+  apiConfigured: boolean;
+  driveConfigured: boolean;
+}) {
   const report = await loadSpins(query);
   if (report.state === "no-database") {
     return (
@@ -55,7 +65,7 @@ async function SpinsBody({ query, apiConfigured }: { query: SpinsQuery; apiConfi
       </Panel>
     );
   }
-  return <SpinsView report={report} query={query} apiConfigured={apiConfigured} />;
+  return <SpinsView report={report} query={query} apiConfigured={apiConfigured} driveConfigured={driveConfigured} />;
 }
 
 function SpinsFallback() {

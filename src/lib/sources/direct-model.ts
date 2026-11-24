@@ -21,7 +21,8 @@ export function hubspotIndustryCte() {
   return `hubspot_industry AS (
     SELECT DISTINCT ON (lower(btrim(name)))
       lower(btrim(name)) AS name_key,
-      NULLIF(btrim(industry_type), '') AS industry_type
+      NULLIF(btrim(industry_type), '') AS industry_type,
+      NULLIF(btrim(customer_type), '') AS customer_type
     FROM accounts
     WHERE organization_id = $1
       AND source = 'hubspot'

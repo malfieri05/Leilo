@@ -1,5 +1,11 @@
 import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, type Sql } from "@/lib/db";
+import {
+  hubspotIndustryCte,
+  hubspotIndustryJoin,
+  resolvedIndustrySql,
+} from "@/lib/sources/direct-model";
 import { NON_REVENUE_TAG_REGEX } from "@/lib/sources/revenue-classification";
+import { excludeDistributorAccountSql } from "@/lib/sources/sales-to-registry";
 import { REVENUE_ORDER_SOURCE } from "@/lib/sources/revenue";
 import {
   addDays,
@@ -44,6 +50,7 @@ export type SalesOverview =
       methods: MethodCard[];
       distributorNote: string | null;
       unclassifiedOrders: number;
+      unclassifiedRevenue: number;
       skus: { sku: string; revenue: number }[];
       families: { family: ProductFamily; revenue: number }[];
       lineRevenue: number;
@@ -130,6 +137,7 @@ export async function loadSalesOverview(
       distributorNote:
         query.region === "nationwide" ? null : "Distributor invoices are not split by retailer state yet.",
       unclassifiedOrders: query.region === "nationwide" ? unclassifiedInPeriod(methodRows, period) : 0,
+      unclassifiedRevenue: query.region === "nationwide" ? unclassifiedRevenueInPeriod(methodRows, period) : 0,
       skus: folded.skus,
       families: folded.families,
       lineRevenue: folded.lineRevenue,
@@ -320,14 +328,16 @@ async function tierAccounts(sql: Sql, organizationId: string, query: SalesQuery,
   const current = between("o.ship_date", period.from, period.to, params);
   const result = rows(
     await sql.query(
-      `SELECT
+      `WITH ${hubspotIndustryCte()}
+       SELECT
          a.id::text AS id,
          a.name,
-         NULLIF(btrim(a.industry_type), '') AS industry_type,
-         NULLIF(btrim(a.customer_type), '') AS customer_type,
+         NULLIF(btrim(${resolvedIndustrySql()}), '') AS industry_type,
+         COALESCE(NULLIF(btrim(a.customer_type), ''), NULLIF(btrim(h.customer_type), ''), '') AS customer_type,
          SUM(o.revenue) AS revenue
        FROM orders o
        JOIN accounts a ON a.id = o.account_id
+       ${hubspotIndustryJoin()}
        WHERE o.organization_id = $1
          AND o.source = $2
          AND o.ordering_method = 'Direct'
@@ -357,10 +367,13 @@ async function industryAccountCounts(sql: Sql, organizationId: string, query: Sa
   const region = accountRegion(query.region, params);
   return rows(
     await sql.query(
-      `SELECT COALESCE(NULLIF(btrim(industry_type), ''), '') AS industry, COUNT(*)::int AS accounts
+      `WITH ${hubspotIndustryCte()}
+       SELECT COALESCE(NULLIF(btrim(${resolvedIndustrySql()}), ''), '') AS industry, COUNT(*)::int AS accounts
        FROM accounts a
+       ${hubspotIndustryJoin()}
        WHERE a.organization_id = $1
          ${region}
+         ${excludeDistributorAccountSql("a.name")}
        GROUP BY 1`,
       params,
     ),
@@ -373,9 +386,11 @@ async function industryRevenueTotals(sql: Sql, organizationId: string, query: Sa
   const current = between("o.ship_date", period.from, period.to, params);
   return rows(
     await sql.query(
-      `SELECT COALESCE(NULLIF(btrim(a.industry_type), ''), '') AS industry, SUM(o.revenue) AS revenue
+      `WITH ${hubspotIndustryCte()}
+       SELECT COALESCE(NULLIF(btrim(${resolvedIndustrySql()}), ''), '') AS industry, SUM(o.revenue) AS revenue
        FROM orders o
        JOIN accounts a ON a.id = o.account_id
+       ${hubspotIndustryJoin()}
        WHERE o.organization_id = $1
          AND o.source = $2
          AND ${countingSql(3)}
@@ -568,6 +583,7 @@ function rolled(organizationId: string, query: SalesQuery, today: string) {
       AND NOT (o.tags ~* ${tags})
       AND o.ship_date IS NOT NULL
       ${region}
+      ${excludeDistributorAccountSql("a.name")}
     GROUP BY a.id, a.name
   )`;
   return { sql, params, d90, d150 };
@@ -712,6 +728,14 @@ function unclassifiedInPeriod(methodRows: SqlRow[], period: ResolvedPeriod) {
   return methodRows
     .filter((row) => text(row.ordering_method) === "Unclassified")
     .reduce((sum, row) => sum + num(row.orders), 0);
+}
+
+function unclassifiedRevenueInPeriod(methodRows: SqlRow[], period: ResolvedPeriod) {
+  const filtered = methodRows.filter((row) => text(row.ordering_method) === "Unclassified");
+  if (!period.from) {
+    return filtered.reduce((sum, row) => sum + num(row.revenue), 0);
+  }
+  return filtered.reduce((sum, row) => sum + num(row.revenue), 0);
 }
 
 function foldLines(skuRows: SqlRow[]) {

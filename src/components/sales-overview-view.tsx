@@ -54,7 +54,8 @@ export function SalesOverviewView({
         {report.distributorNote ? <p className="mt-3 text-sm text-muted">{report.distributorNote}</p> : null}
         {report.unclassifiedOrders > 0 ? (
           <p className="mt-3 text-sm text-muted">
-            {report.unclassifiedOrders.toLocaleString()} unclassified orders are not in these totals.
+            {report.unclassifiedOrders.toLocaleString()} unclassified orders ({money(report.unclassifiedRevenue)}) are
+            not in these method totals. Re-sync Shopify on Sources after rule changes.
           </p>
         ) : null}
       </section>
@@ -107,7 +108,10 @@ export function SalesOverviewView({
       <section aria-label="Account health">
         <div className="mb-3">
           <h2 className="font-display text-xl text-heading">Account health</h2>
-          <p className="mt-1 text-sm text-muted">As of today. A later order on any method keeps the account Active.</p>
+          <p className="mt-1 text-sm text-muted">
+            As of today for retailer accounts (KEHE, UNFI, and DSD partners excluded). A later order on any channel keeps
+            the account Active.
+          </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <CohortCard query={query} id="lifetime" value={count(report.health.lifetime)} delta="Ever ordered" />

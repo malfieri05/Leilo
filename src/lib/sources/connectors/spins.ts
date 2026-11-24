@@ -1,13 +1,20 @@
 import { includeInSpinsView } from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
+import { spinsApiLive, spinsDriveLive } from "@/lib/sources/spins/spins-connection";
 import type { PullResult } from "@/lib/sources/types";
 
 export async function pullSpins(): Promise<PullResult> {
+  if (spinsDriveLive()) {
+    return emptyPull(
+      "SPINS syncs from the shared Google Drive folder. Use Sync on Sources — each matched spreadsheet becomes a report file.",
+      true,
+    );
+  }
   const key = process.env.SPINS_API_KEY?.trim() ?? "";
   const endpoint = process.env.SPINS_API_URL?.trim() ?? "";
   if (!key || !endpoint) {
     return emptyPull(
-      "SPINS API credentials are not both set. Upload the Brand Rank, Item Rank, or Sprouts extract instead.",
+      "Set GOOGLE_DRIVE_SPINS_FOLDER_ID with GOOGLE_SERVICE_ACCOUNT_JSON, or upload Brand Rank, Item Rank, or Sprouts extracts.",
       true,
     );
   }

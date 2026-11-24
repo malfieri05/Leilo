@@ -7,6 +7,8 @@ import {
   type GoogleSheetFeed,
 } from "@/lib/sources/google-sheet-feeds";
 import { sheetIdsConfigured, sourceCatalog, sourceConfigured, specFor, type SourceKind } from "@/lib/sources/catalog";
+import { dsdDriveLive } from "@/lib/sources/dsd/dsd-connection";
+import { spinsDriveLive } from "@/lib/sources/spins/spins-connection";
 import { infoLinkForCatalogSource, infoLinkForGoogleSheetFeed, type SourceInfoLink } from "@/lib/sources/source-external-links";
 
 export type SourceRow = {
@@ -185,8 +187,16 @@ function present(
     }
   } else if (!configured) {
     status = "Needs credentials";
-    detail = `Set ${spec.env.join(", ")}.`;
+    detail =
+      spec.source === "spins"
+        ? "Set GOOGLE_SERVICE_ACCOUNT_JSON and share the SPINS Data Drive folder with that account, or upload extracts."
+        : `Set ${spec.env.join(", ")}.`;
     canSync = false;
+  } else if (spec.source === "spins" && spinsDriveLive()) {
+    detail = detail || "Sync pulls every matched spreadsheet from the SPINS Data Google Drive folder.";
+  } else if (spec.source === "dsd" && dsdDriveLive()) {
+    canSync = database;
+    detail = detail || "Sync reads the newest spreadsheet in each partner folder on ALL SALES REPORTS.";
   } else if (spec.source === "google_sheets" && sheetIdsConfigured().length === 0) {
     status = "Needs sheet ids";
     detail = detail || "Add sheet ids (SKU, LTL, locator, promotion calendar).";

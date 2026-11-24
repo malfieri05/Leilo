@@ -1,3 +1,5 @@
+import { spinsSourceConfigured } from "@/lib/sources/spins/spins-connection";
+
 export type SourceKind = "api" | "file" | "hybrid";
 
 export type SourceSpec = {
@@ -47,9 +49,10 @@ export const sourceCatalog: SourceSpec[] = [
   {
     source: "spins",
     name: "SPINS",
-    method: "Data Access API when MyExtracts is enabled, otherwise a file extract",
+    method:
+      "Google Drive folder sync (service account) when wired; optional Data Access API; otherwise file upload",
     kind: "hybrid",
-    env: ["SPINS_API_KEY", "SPINS_API_URL"],
+    env: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_DRIVE_SPINS_FOLDER_ID"],
   },
   {
     source: "kehe",
@@ -68,9 +71,9 @@ export const sourceCatalog: SourceSpec[] = [
   {
     source: "dsd",
     name: "DSD partners",
-    method: "Named file feed: DSD Link export, or the emailed spreadsheet",
-    kind: "file",
-    env: [],
+    method: "Google Drive ALL SALES REPORTS (newest file per partner folder), or CSV upload",
+    kind: "hybrid",
+    env: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_DRIVE_DSD_REPORTS_FOLDER_ID"],
   },
   {
     source: "encompass",
@@ -102,12 +105,19 @@ export function specFor(source: string) {
 }
 
 export function sourceConfigured(spec: SourceSpec) {
+  if (spec.source === "spins") return spinsSourceConfigured();
+  if (spec.source === "dsd") return true;
   if (spec.env.length === 0) return spec.kind === "file";
   return spec.env.every((key) => Boolean(process.env[key]?.trim()));
 }
 
 export function sheetIdsConfigured() {
-  return ["GOOGLE_SHEET_SKU_ID", "GOOGLE_SHEET_LTL_ID", "GOOGLE_SHEET_LOCATOR_ID", "GOOGLE_SHEET_PROMO_ID"].filter(
-    (key) => Boolean(process.env[key]?.trim()),
-  );
+  return [
+    "GOOGLE_SHEET_SKU_ID",
+    "GOOGLE_SHEET_LTL_ID",
+    "GOOGLE_SHEET_LOCATOR_ID",
+    "GOOGLE_SHEET_PROMO_ID",
+    "GOOGLE_SHEET_KEHE_SALES_ID",
+    "GOOGLE_SHEET_KEHE_STOCK_ID",
+  ].filter((key) => Boolean(process.env[key]?.trim()));
 }
