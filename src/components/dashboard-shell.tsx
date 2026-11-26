@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { PlatformTitle } from "@/components/platform-title";
 import { primaryNav, workspaceNav } from "@/lib/nav";
 
 const STORAGE_KEY = "leilo-sidebar-collapsed";
@@ -282,8 +283,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:pl-[var(--sidebar-width)]">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-paper/90 px-4 py-3 backdrop-blur md:px-8">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-4 backdrop-blur md:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               className="rounded-md border border-line px-2.5 py-1.5 text-sm md:hidden"
@@ -293,10 +294,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             >
               Menu
             </button>
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-muted">Lay low. Let loose.</p>
-              <p className="text-sm text-ink">November 2026 · MTD view</p>
-            </div>
+            <Suspense fallback={<span className="inline-block h-7 w-36 animate-pulse rounded-md bg-sand" />}>
+              <PlatformTitle />
+            </Suspense>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden rounded-full bg-lime/70 px-3 py-1 text-lagoon-deep sm:inline">Mock data</span>

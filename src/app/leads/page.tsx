@@ -3,27 +3,20 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { KpiCard } from "@/components/kpi-card";
 import { LeadsView } from "@/components/leads-view";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { SalesFilters } from "@/components/sales-filters";
 import { compareLabel } from "@/components/sales-overview-view";
 import { listAccounts } from "@/lib/sources/accounts";
 import { loadLeads } from "@/lib/sources/leads-overview";
-import { parseSalesQuery, salesQueryString, type ResolvedPeriod, type SalesQuery } from "@/lib/sources/sales-overview-model";
+import { parseSalesQuery, type ResolvedPeriod, type SalesQuery } from "@/lib/sources/sales-overview-model";
 
 export const metadata: Metadata = { title: "Lead Generation" };
 
 export default function LeadsPage({ searchParams }: PageProps<"/leads">) {
   return (
-    <>
-      <PageHeader
-        title="Lead Generation"
-        description="At Risk, Past, and upsell lists for KEHE, Direct, and DSD. Health is as of today. Competitor lookalikes wait on store lists."
-      />
-      <Suspense fallback={<LeadsFallback />}>
-        <LeadsFrame searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<LeadsFallback />}>
+      <LeadsFrame searchParams={searchParams} />
+    </Suspense>
   );
 }
 
@@ -33,7 +26,6 @@ async function LeadsFrame({ searchParams }: { searchParams: Promise<Record<strin
   return (
     <>
       <SalesFilters
-        key={salesQueryString(parsed.query)}
         query={parsed.query}
         periodLabel={parsed.period.label}
         compareLabel={compareLabel(parsed.period)}

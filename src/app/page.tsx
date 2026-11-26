@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { KpiCard } from "@/components/kpi-card";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { SourceRevenue } from "@/components/source-revenue";
 import { accounts, flavorMix, kpis, weeklyTrend } from "@/lib/mock-data";
@@ -12,11 +11,6 @@ export default function OverviewPage() {
 
   return (
     <>
-      <PageHeader
-        title="Overview"
-        description="Synced revenue by ordering method is first. The cards and charts below stay labeled as sample data until that source has landed rows."
-      />
-
       <Suspense fallback={<Panel title="Revenue by ordering method">Loading source revenue.</Panel>}>
         <OverviewRevenue />
       </Suspense>

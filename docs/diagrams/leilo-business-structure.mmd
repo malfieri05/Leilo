@@ -1,0 +1,181 @@
+flowchart TB
+  %% ═══════════════════════════════════════
+  %% COMPANY
+  %% ═══════════════════════════════════════
+  subgraph LEILO["Leilo, Inc."]
+    direction TB
+    Sol["Sol Broady — CEO"]
+    Ethan["Ethan Blattman — CFO"]
+
+    subgraph SALESORG["Wholesale sales"]
+      Weston["Weston Porter — Head of Sales"]
+      Zak["Zak — Southeast"]
+      James["James — California"]
+      Ivee["Ivee — support"]
+      Joseph["Joseph — B2B accounts & ops"]
+      Weston --> Zak
+      Weston --> James
+      Weston --> Ivee
+      Weston --> Joseph
+    end
+
+    subgraph DIGITAL["DTC & marketing"]
+      Brenden["Brenden — Digital & DTC"]
+      Thea["Thea — design"]
+      Brenden --> Thea
+    end
+
+    subgraph OPSORG["Operations"]
+      Brian["Brian — Head of Operations"]
+      Afthab["Afthab — ops support"]
+      Brian --> Afthab
+      Joseph -.-> Brian
+    end
+
+    Sol ~~~ Ethan
+    Sol ~~~ Weston
+    Sol ~~~ Brenden
+    Sol ~~~ Brian
+  end
+
+  %% Master reference data (feeds everyone)
+  DS_SKU[("Google Sheet: Master Price/SKU List 2026 B2B")]
+  DS_DRIVE[("Google Drive — shared folders: marketing, SPINS exports, DSD reports, brand assets")]
+  DS_SKU -.-> LEILO
+  DS_DRIVE -.-> LEILO
+
+  %% ═══════════════════════════════════════
+  %% PRODUCTS
+  %% ═══════════════════════════════════════
+  PROD["Products: RTD cans · drink mix sticks · extract / flakes / powders"]
+  LEILO --> PROD
+
+  %% ═══════════════════════════════════════
+  %% DTC CHANNEL
+  %% ═══════════════════════════════════════
+  subgraph DTC["Consumer channel (not one of the four B2B methods)"]
+    Web["leilo.com — online shop"]
+    FindUs["Public Find Us / store locator page"]
+    DS_LOCATOR[("Google Sheet: Store Locator")]
+    DS_LOCATOR --> FindUs
+    Web --> Shoppers["Consumers"]
+  end
+
+  PROD --> Web
+  Brenden --> Web
+
+  DS_SHOPIFY_DTC[("Shopify — consumer + B2B store leilosupply / leilo wholesale orders")]
+  Web -.-> DS_SHOPIFY_DTC
+  FindUs -.-> DS_LOCATOR
+
+  %% ═══════════════════════════════════════
+  %% B2B WHOLESALE SPINE
+  %% ═══════════════════════════════════════
+  PROD --> B2B["B2B wholesale — product reaches retail doors"]
+
+  subgraph METHODS["Four ordering methods"]
+    direction LR
+    MD["① Direct"]
+    MK["② KEHE"]
+    MU["③ UNFI — not activated yet"]
+    MS["④ DSD — many regional partners"]
+  end
+
+  B2B --> METHODS
+
+  CRM[("HubSpot — retailer accounts, Industry Type, tasks, Direct orders object")]
+  Weston -.-> CRM
+  Zak -.-> CRM
+  James -.-> CRM
+  Ivee -.-> CRM
+
+  %% ─── DIRECT ───
+  subgraph PATH_DIRECT["Direct — retailer buys from Leilo"]
+    PD_BUYER["Buyer: retail store or wholesale account"]
+    PD_PATH["Leilo → store (no distributor in the middle)"]
+    PD_CHANNELS["Orders via leilowholesale.com · Airgoods · Rep Rally · invoiced B2B (#B-)"]
+  end
+
+  MD --> PATH_DIRECT
+  PD_CHANNELS --> PD_BUYER
+  DS_SHOPIFY_DTC -.->|"all B2B order lines; filter out KEHE/UNFI/DSD"| PD_BUYER
+  CRM -.->|"Direct sales detail · company records"| PD_BUYER
+
+  %% ─── KEHE ───
+  subgraph PATH_KEHE["KEHE — national distributor"]
+    PK_INV["Leilo invoices KEHE — tracked in Shopify B2B orders"]
+    PK_THRU["KEHE sells through to natural/specialty stores"]
+    DS_KEHE_CONN[("KEHE Connect supplier portal — sales, fill rate, stock status reports")]
+    DS_KEHE_SHEET[("Google Sheet/Drive: KEHE sales pivot · stock status file")]
+    DS_SPS[("SPS Commerce — EDI / purchase orders (planned path vs manual Connect pulls)")]
+  end
+
+  MK --> PATH_KEHE
+  PK_INV --> PK_THRU
+  DS_SHOPIFY_DTC -.-> PK_INV
+  DS_KEHE_CONN -.->|"manual export today"| DS_KEHE_SHEET
+  DS_KEHE_CONN -.-> PK_THRU
+  DS_SPS -.->|"future EDI"| PK_INV
+
+  %% ─── UNFI ───
+  subgraph PATH_UNFI["UNFI — same model as KEHE"]
+    PU_INV["Leilo → UNFI (Shopify when live)"]
+    PU_THRU["UNFI → stores"]
+    DS_UNFI[("UNFI supplier portal — not activated")]
+  end
+
+  MU --> PATH_UNFI
+  PU_INV --> PU_THRU
+  DS_UNFI -.-> PU_THRU
+
+  %% ─── DSD ───
+  subgraph PATH_DSD["DSD — Direct Store Delivery partners (regional)"]
+    PS_INV["Leilo invoices each DSD partner — Shopify B2B"]
+    PS_THRU["Partner delivers and reports sales to retailers"]
+    DS_DSD_FOLDER[("Google Drive: ALL SALES REPORTS — one subfolder per partner")]
+    DS_DSD_COMBINED[("Google Sheet: All Distributor Sales Data combined")]
+    DS_DSD_COVERAGE[("Google Sheet: Distributor Sales Report Coverage")]
+    DS_DSD_TERMS[("Google Sheet: Distributor/DSD summary — contracts & terms")]
+    DS_ENCOMPASS[("Encompass portals — CCHG, Elite, LAD, Mexcor, Romano…")]
+    DS_DSD_EMAIL[("Partner sales reports — email (weekly/monthly)")]
+  end
+
+  MS --> PATH_DSD
+  PS_INV --> PS_THRU
+  DS_SHOPIFY_DTC -.-> PS_INV
+  DS_DSD_FOLDER -.->|"through-sales files"| PS_THRU
+  DS_DSD_EMAIL -.-> PS_THRU
+  DS_ENCOMPASS -.-> PS_THRU
+  DS_DSD_FOLDER -.-> DS_DSD_COMBINED
+  DS_DSD_FOLDER -.-> DS_DSD_COVERAGE
+  DS_DSD_TERMS -.-> SALESORG
+
+  %% ─── RETAIL DOOR ───
+  DOOR["Retail door — product on shelf"]
+  PD_BUYER --> DOOR
+  PK_THRU --> DOOR
+  PU_THRU --> DOOR
+  PS_THRU --> DOOR
+
+  %% ═══════════════════════════════════════
+  %% CROSS-CUTTING SYSTEMS
+  %% ═══════════════════════════════════════
+  subgraph INTEL["Market & ops intelligence (not tied to one ordering method)"]
+    DS_SPINS_P[("SPINS portal — category & competitor pulls")]
+    DS_SPINS_D[("Google Drive: SPINS Data folder — dated exports")]
+    DS_SPINS_P --> DS_SPINS_D
+
+    DS_PROMO[("Google Sheet: Promotion Calendar — KEHE, UNFI, DSD promos")]
+    DS_PROMO -.-> PATH_KEHE
+    DS_PROMO -.-> PATH_DSD
+
+    DS_LTL[("Google Sheet: LTL / BOLs for TLs — #B- bulk shipments")]
+    DS_SHIP[("ShipStation — sample & shipment tracking · planned")]
+    DS_SHOPIFY_DTC -.-> DS_LTL
+    DS_SHOPIFY_DTC -.->|"tags: sample, POS, merch"| DS_SHIP
+
+    DS_ZOOM[("ZoomInfo — prospect contact research")]
+    DS_ZOOM -.-> SALESORG
+  end
+
+  LEILO -.-> DS_SPINS_D

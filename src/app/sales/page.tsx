@@ -1,81 +1,65 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { KpiCard } from "@/components/kpi-card";
-import { PageHeader } from "@/components/page-header";
-import { Panel } from "@/components/panel";
-import { SalesFilters } from "@/components/sales-filters";
-import { compareLabel, SalesOverviewView } from "@/components/sales-overview-view";
-import { loadSalesOverview } from "@/lib/sources/sales-overview";
-import { parseSalesQuery, salesQueryString, type ResolvedPeriod, type SalesQuery } from "@/lib/sources/sales-overview-model";
+import { SalesOverviewChrome, SalesOverviewChromeLive } from "@/components/sales-overview-chrome";
+import { SalesChannelBody } from "@/components/sales-channel-body";
+import { SalesResultsFade } from "@/components/sales-results-fade";
+import { normalizePartnerName } from "@/lib/sources/dsd/partners";
+import { parseSalesQuery, type SalesQuery } from "@/lib/sources/sales-overview-model";
 
 export const metadata: Metadata = { title: "Sales Overview" };
+
+const chromeFallbackQuery: SalesQuery = {
+  channel: "all",
+  region: "nationwide",
+  range: "ytd",
+  from: null,
+  to: null,
+  segment: "industry",
+  segmentValue: "",
+  cohort: null,
+  partner: null,
+};
 
 export default function SalesOverviewPage({ searchParams }: PageProps<"/sales">) {
   return (
     <>
-      <PageHeader
-        title="Sales Overview"
-        description="Shopify invoice view (sales to retailers and distributors). KEHE and DSD tabs show sales through to stores. Revenue uses ship date; account health is retailer-only, as of today."
-      />
-      <Suspense fallback={<OverviewFallback />}>
-        <SalesFrame searchParams={searchParams} />
+      <Suspense
+        fallback={
+          <SalesOverviewChrome query={chromeFallbackQuery} periodLabel="Year to date" compareLabel={null} />
+        }
+      >
+        <SalesOverviewChromeLive />
       </Suspense>
+      <SalesResultsFade>
+        <Suspense fallback={<ResultsPlaceholder />}>
+          <SalesResults searchParams={searchParams} />
+        </Suspense>
+      </SalesResultsFade>
     </>
   );
 }
 
-async function SalesFrame({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  await connection();
-  const parsed = parseSalesQuery(await searchParams);
-  return (
-    <>
-      <SalesFilters
-        key={salesQueryString(parsed.query)}
-        query={parsed.query}
-        periodLabel={parsed.period.label}
-        compareLabel={compareLabel(parsed.period)}
-      />
-      <Suspense fallback={<OverviewFallback />}>
-        <SalesBody query={parsed.query} period={parsed.period} today={parsed.today} />
-      </Suspense>
-    </>
-  );
-}
-
-async function SalesBody({
-  query,
-  period,
-  today,
+async function SalesResults({
+  searchParams,
 }: {
-  query: SalesQuery;
-  period: ResolvedPeriod;
-  today: string;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await connection();
-  const report = await loadSalesOverview(query, period, today);
-  if (report.state === "no-database") {
-    return (
-      <Panel title="Sales Overview">
-        <p className="text-sm text-muted">The database is not connected.</p>
-      </Panel>
-    );
-  }
-  if (report.state === "error") {
-    return (
-      <Panel title="Sales Overview">
-        <p className="text-sm text-hibiscus">{report.message}</p>
-      </Panel>
-    );
-  }
-  return <SalesOverviewView query={query} period={period} report={report} />;
+  const parsed = parseSalesQuery(await searchParams);
+  const partner =
+    parsed.query.channel === "dsd" && parsed.query.partner
+      ? normalizePartnerName(parsed.query.partner) || null
+      : null;
+  const query = partner ? { ...parsed.query, partner } : parsed.query;
+  return <SalesChannelBody query={query} period={parsed.period} today={parsed.today} partner={partner} />;
 }
 
-function OverviewFallback() {
+function ResultsPlaceholder() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {["Total revenue", "Direct", "DSD", "KEHE", "UNFI"].map((label) => (
-        <KpiCard key={label} label={label} value="—" delta="Loading" tone="flat" />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden>
+      {Array.from({ length: 4 }, (_, index) => (
+        <div key={index} className="h-28 animate-pulse rounded-[10px] bg-paper ring-1 ring-line" />
       ))}
     </div>
   );

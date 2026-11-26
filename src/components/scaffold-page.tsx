@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 
 type Card = { title: string; detail: string };
@@ -13,19 +12,14 @@ type PanelBlock = {
 };
 
 export function ScaffoldPage({
-  title,
-  description,
   leading,
   panels,
 }: {
-  title: string;
-  description: string;
   leading?: React.ReactNode;
   panels: PanelBlock[];
 }) {
   return (
     <>
-      <PageHeader title={title} description={description} />
       {leading}
       <div className="grid gap-4">
         {panels.map((panel) => (

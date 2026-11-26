@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { LocatorView } from "@/components/locator-view";
 import { loadLocatorTable } from "@/lib/store-locations";
@@ -10,15 +9,9 @@ export const metadata: Metadata = { title: "Store locator" };
 
 export default function LocatorPage() {
   return (
-    <>
-      <PageHeader
-        title="Auto-Updating Store Locator"
-        description="Live doors from the company Leilo locations Google Sheet. Region comes from the retailer address; map pins need coordinates."
-      />
-      <Suspense fallback={<Panel title="Doors"><p className="text-sm text-muted">Loading locations.</p></Panel>}>
-        <LocatorBody />
-      </Suspense>
-    </>
+    <Suspense fallback={<Panel title="Doors"><p className="text-sm text-muted">Loading locations.</p></Panel>}>
+      <LocatorBody />
+    </Suspense>
   );
 }
 

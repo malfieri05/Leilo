@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { pipeline } from "@/lib/mock-data";
 
@@ -7,12 +6,7 @@ export const metadata: Metadata = { title: "Pipeline" };
 
 export default function PipelinePage() {
   return (
-    <>
-      <PageHeader
-        title="Pipeline"
-        description="Deal board for new retail doors, expansions, and distributor programs. Stages and values are mock."
-      />
-      <Panel title="Open opportunities" action="5 deals">
+    <Panel title="Open opportunities" action="5 deals">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.12em] text-muted">
@@ -35,7 +29,6 @@ export default function PipelinePage() {
             </tbody>
           </table>
         </div>
-      </Panel>
-    </>
+    </Panel>
   );
 }

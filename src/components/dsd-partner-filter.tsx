@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { salesQueryString, type SalesQuery } from "@/lib/sources/sales-overview-model";
 
 export function DsdPartnerFilter({
@@ -11,6 +11,7 @@ export function DsdPartnerFilter({
   options: { slug: string; label: string }[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <label className="mb-4 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted">
@@ -19,7 +20,7 @@ export function DsdPartnerFilter({
         value={query.partner ?? ""}
         onChange={(event) => {
           const partner = event.target.value || null;
-          router.push(`/dsd${salesQueryString(query, { partner })}`);
+          router.push(`${pathname}${salesQueryString(query, { partner, channel: "dsd" })}`);
         }}
         className="rounded-[10px] border border-line bg-paper px-3 py-1.5 text-sm normal-case tracking-normal text-ink"
       >

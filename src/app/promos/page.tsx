@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { PromosFilters } from "@/components/promos-filters";
 import { PromosView } from "@/components/promos-view";
@@ -12,15 +11,9 @@ export const metadata: Metadata = { title: "Promotion calendar" };
 
 export default function PromosPage({ searchParams }: PageProps<"/promos">) {
   return (
-    <>
-      <PageHeader
-        title="Promotion Calendar"
-        description="KEHE and UNFI promotions in a two-month calendar, agenda list, or full matrix."
-      />
-      <Suspense fallback={<Panel title="Promotions"><p className="text-sm text-muted">Loading the calendar.</p></Panel>}>
-        <PromosFrame searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<Panel title="Promotions"><p className="text-sm text-muted">Loading the calendar.</p></Panel>}>
+      <PromosFrame searchParams={searchParams} />
+    </Suspense>
   );
 }
 

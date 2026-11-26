@@ -1,5 +1,8 @@
 export const SOUTHEAST_STATES = ["FL", "GA", "SC", "NC", "MS", "TN", "AL"] as const;
 
+export const channelKeys = ["all", "direct", "kehe", "dsd", "unfi"] as const;
+export type ChannelKey = (typeof channelKeys)[number];
+
 export const regionKeys = ["nationwide", "california", "southeast"] as const;
 export type RegionKey = (typeof regionKeys)[number];
 
@@ -30,6 +33,7 @@ export type ProductFamily = (typeof productFamilies)[number];
 export const BLANK_SEGMENT = "__blank__";
 
 export type SalesQuery = {
+  channel: ChannelKey;
   region: RegionKey;
   range: RangeKey;
   from: string | null;
@@ -164,8 +168,11 @@ export function parseSalesQuery(
   const segment = oneOf(one(input.segment), segmentKeys, "industry");
   const segmentValue = one(input.segmentValue).trim();
   const cohort = oneOfOrNull(one(input.cohort), cohortIds);
-  const partner = one(input.partner).trim() || null;
+  const channel = oneOf(one(input.channel), channelKeys, "all");
+  const partnerRaw = one(input.partner).trim() || null;
+  const partner = channel === "dsd" ? partnerRaw : null;
   const query: SalesQuery = {
+    channel,
     region,
     range,
     from: range === "custom" ? from : null,
@@ -219,6 +226,7 @@ export function salesQueryString(query: SalesQuery, patch: Partial<SalesQuery> =
   if (next.segment !== "industry") params.set("segment", next.segment);
   if (next.segmentValue) params.set("segmentValue", next.segmentValue);
   if (next.cohort) params.set("cohort", next.cohort);
+  if (next.channel !== "all") params.set("channel", next.channel);
   if (next.partner) params.set("partner", next.partner);
   const text = params.toString();
   return text ? `?${text}` : "";

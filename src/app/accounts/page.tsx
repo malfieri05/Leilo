@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { listAccounts } from "@/lib/sources/accounts";
 
@@ -10,15 +9,9 @@ export const metadata: Metadata = { title: "Accounts" };
 
 export default function AccountsPage() {
   return (
-    <>
-      <PageHeader
-        title="Accounts"
-        description="Companies synced from HubSpot. Ordering method and industry come from the company properties."
-      />
-      <Suspense fallback={<Panel title="Account book">Loading accounts.</Panel>}>
-        <AccountBook />
-      </Suspense>
-    </>
+    <Suspense fallback={<Panel title="Account book">Loading accounts.</Panel>}>
+      <AccountBook />
+    </Suspense>
   );
 }
 

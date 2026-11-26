@@ -12,6 +12,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.2.1",
     "leaflet": "^1.9.4",
+    "mermaid": "^11.17.2",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",

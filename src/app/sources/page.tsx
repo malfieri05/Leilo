@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { SourceInfoLink } from "@/components/source-info-link";
 import { ImportForm, SyncAllButton, SyncButton } from "@/components/source-actions";
@@ -11,15 +10,9 @@ export const metadata = { title: "Sources" };
 
 export default function SourcesPage() {
   return (
-    <>
-      <PageHeader
-        title="Sources"
-        description="Each system, how it connects, and the last time a sync succeeded. Credentials are created in the vendor admin and kept in environment variables. Staff portal passwords are not used."
-      />
-      <Suspense fallback={<Panel title="Connections">Loading source status.</Panel>}>
-        <SourcesBody />
-      </Suspense>
-    </>
+    <Suspense fallback={<Panel title="Connections">Loading source status.</Panel>}>
+      <SourcesBody />
+    </Suspense>
   );
 }
 

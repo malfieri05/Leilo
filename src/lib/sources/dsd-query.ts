@@ -5,11 +5,11 @@ export function parseDsdQuery(
   input: Record<string, string | string[] | undefined>,
   now = new Date(),
 ): { query: SalesQuery; period: ResolvedPeriod; today: string; partner: string | null } {
-  const parsed = parseSalesQuery(input, now);
+  const parsed = parseSalesQuery({ ...input, channel: "dsd" }, now);
   const partner = parsed.query.partner ? normalizePartnerName(parsed.query.partner) : null;
   return {
     ...parsed,
     partner: partner || null,
-    query: { ...parsed.query, partner: partner || null },
+    query: { ...parsed.query, channel: "dsd", partner: partner || null },
   };
 }

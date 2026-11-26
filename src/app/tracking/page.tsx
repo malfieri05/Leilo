@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { TrackingView } from "@/components/tracking-view";
 import { loadTrackingOverview } from "@/lib/sources/tracking-overview";
@@ -10,15 +9,9 @@ export const metadata: Metadata = { title: "Sample / order tracking" };
 
 export default function TrackingPage() {
   return (
-    <>
-      <PageHeader
-        title="Sample / Order Tracking"
-        description="POS, merch, and sample orders from ShipStation, plus LTL freight from the Kehe sheet. A shipment stays on this tab until 21 days after it is delivered."
-      />
-      <Suspense fallback={<TrackingFallback />}>
-        <TrackingBody />
-      </Suspense>
-    </>
+    <Suspense fallback={<TrackingFallback />}>
+      <TrackingBody />
+    </Suspense>
   );
 }
 

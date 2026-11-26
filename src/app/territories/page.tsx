@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { territories } from "@/lib/mock-data";
 
@@ -7,12 +6,7 @@ export const metadata: Metadata = { title: "Territories" };
 
 export default function TerritoriesPage() {
   return (
-    <>
-      <PageHeader
-        title="Territories"
-        description="Regional revenue, door count, and a coarse velocity flag. Door locations are on the Map tab."
-      />
-      <Panel title="Regions" action="MTD">
+    <Panel title="Regions" action="MTD">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.12em] text-muted">
@@ -35,7 +29,6 @@ export default function TerritoriesPage() {
             </tbody>
           </table>
         </div>
-      </Panel>
-    </>
+    </Panel>
   );
 }

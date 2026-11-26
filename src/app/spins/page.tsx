@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import { KpiCard } from "@/components/kpi-card";
-import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { SpinsFilters } from "@/components/spins-filters";
 import { SpinsView } from "@/components/spins-view";
@@ -14,15 +13,9 @@ export const metadata: Metadata = { title: "SPINS Data" };
 
 export default function SpinsPage({ searchParams }: PageProps<"/spins">) {
   return (
-    <>
-      <PageHeader
-        title="SPINS Data"
-        description="Category scan dollars from Brand Rank, Item Rank, and the Sprouts item matrix. Sync from the SPINS Data Google Drive folder on Sources, or upload extracts. 4-packs and items under $2,000 stay out of the view."
-      />
-      <Suspense fallback={<SpinsFallback />}>
-        <SpinsFrame searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<SpinsFallback />}>
+      <SpinsFrame searchParams={searchParams} />
+    </Suspense>
   );
 }
 
