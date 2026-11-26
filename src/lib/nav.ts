@@ -1,21 +1,16 @@
 export const primaryNav = [
   { href: "/sales", label: "Sales Overview", hint: "Direct, KEHE, DSD, UNFI" },
-  { href: "/leads", label: "Lead Generation", hint: "Prospects and outreach" },
   { href: "/spins", label: "SPINS Data", hint: "Scan dollars and units" },
-  { href: "/brand", label: "Leilo Brand Kit / Marketing Materials", hint: "Logos and sell sheets" },
-  { href: "/skus", label: "SKU Data / Information", hint: "Packs, cases, prices" },
-  { href: "/promos", label: "Promotion Calendar", hint: "Windows and channels" },
   { href: "/tracking", label: "Sample / Order Tracking", hint: "Shipments and samples" },
-  { href: "/locator", label: "Auto-Updating Store Locator", hint: "Leilo locations sheet" },
+  { href: "/leads", label: "Lead Generation", hint: "Prospects and outreach" },
+  { href: "/brand", label: "Marketing Kit", hint: "Logos and sell sheets" },
+  { href: "/promos", label: "Promotion Calendar", hint: "Windows and channels" },
+  { href: "/map", label: "Map", hint: "Doors and coverage" },
 ] as const;
 
 export const workspaceNav = [
   { href: "/reference/business-structure", label: "Business structure", hint: "Org, channels, and data sources" },
   { href: "/sources", label: "Data Sources", hint: "Connections and syncs" },
-  { href: "/map", label: "Map", hint: "Doors and coverage" },
-  { href: "/pipeline", label: "Pipeline", hint: "Deals and openings" },
-  { href: "/accounts", label: "Accounts", hint: "Retail and on-prem" },
-  { href: "/products", label: "Products", hint: "SKUs and mix" },
-  { href: "/territories", label: "Territories", hint: "Regions and velocity" },
-  { href: "/team", label: "Team", hint: "Reps and coverage" },
+  { href: "/locator", label: "Store list", hint: "Leilo locations sheet" },
+  { href: "/skus", label: "SKU info", hint: "Packs, cases, prices" },
 ] as const;

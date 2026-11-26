@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { SalesOverviewChrome, SalesOverviewChromeLive } from "@/components/sales-overview-chrome";
 import { SalesChannelBody } from "@/components/sales-channel-body";
-import { SalesResultsFade } from "@/components/sales-results-fade";
+import { ResultsFade } from "@/components/results-fade";
 import { normalizePartnerName } from "@/lib/sources/dsd/partners";
 import { parseSalesQuery, type SalesQuery } from "@/lib/sources/sales-overview-model";
 
@@ -31,11 +31,11 @@ export default function SalesOverviewPage({ searchParams }: PageProps<"/sales">)
       >
         <SalesOverviewChromeLive />
       </Suspense>
-      <SalesResultsFade>
+      <ResultsFade>
         <Suspense fallback={<ResultsPlaceholder />}>
           <SalesResults searchParams={searchParams} />
         </Suspense>
-      </SalesResultsFade>
+      </ResultsFade>
     </>
   );
 }

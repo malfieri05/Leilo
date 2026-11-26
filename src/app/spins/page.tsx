@@ -3,35 +3,47 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
-import { SpinsFilters } from "@/components/spins-filters";
+import { ResultsFade } from "@/components/results-fade";
+import { SpinsChrome, SpinsChromeLive } from "@/components/spins-chrome";
 import { SpinsView } from "@/components/spins-view";
 import { loadSpins } from "@/lib/sources/spins-overview";
-import { parseSpinsQuery, spinsQueryString, type SpinsQuery } from "@/lib/sources/spins-model";
+import { parseSpinsQuery, type SpinsQuery } from "@/lib/sources/spins-model";
 import { spinsDriveLive } from "@/lib/sources/spins/spins-connection";
 
 export const metadata: Metadata = { title: "SPINS Data" };
 
+const chromeFallbackQuery: SpinsQuery = {
+  report: "brand-rank",
+  weeks: 12,
+  region: "nationwide",
+  scope: "competitors",
+};
+
 export default function SpinsPage({ searchParams }: PageProps<"/spins">) {
   return (
-    <Suspense fallback={<SpinsFallback />}>
-      <SpinsFrame searchParams={searchParams} />
-    </Suspense>
+    <>
+      <Suspense fallback={<SpinsChrome query={chromeFallbackQuery} />}>
+        <SpinsChromeLive />
+      </Suspense>
+      <ResultsFade>
+        <Suspense fallback={<SpinsFallback />}>
+          <SpinsResults searchParams={searchParams} />
+        </Suspense>
+      </ResultsFade>
+    </>
   );
 }
 
-async function SpinsFrame({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+async function SpinsResults({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await connection();
   const query = parseSpinsQuery(await searchParams);
   const apiConfigured = Boolean(process.env.SPINS_API_KEY?.trim() && process.env.SPINS_API_URL?.trim());
   const driveConfigured = spinsDriveLive();
-  return (
-    <>
-      <SpinsFilters key={spinsQueryString(query)} query={query} />
-      <Suspense fallback={<SpinsFallback />}>
-        <SpinsBody query={query} apiConfigured={apiConfigured} driveConfigured={driveConfigured} />
-      </Suspense>
-    </>
-  );
+  return <SpinsBody query={query} apiConfigured={apiConfigured} driveConfigured={driveConfigured} />;
 }
 
 async function SpinsBody({
@@ -63,7 +75,7 @@ async function SpinsBody({
 
 function SpinsFallback() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden>
       <KpiCard label="In-view dollars" value="—" delta="Loading" tone="flat" />
       <KpiCard label="Leilo dollars" value="—" delta="Loading" tone="flat" />
       <KpiCard label="Competitor-set dollars" value="—" delta="Loading" tone="flat" />

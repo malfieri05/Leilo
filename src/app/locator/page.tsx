@@ -5,7 +5,7 @@ import { Panel } from "@/components/panel";
 import { LocatorView } from "@/components/locator-view";
 import { loadLocatorTable } from "@/lib/store-locations";
 
-export const metadata: Metadata = { title: "Store locator" };
+export const metadata: Metadata = { title: "Store list" };
 
 export default function LocatorPage() {
   return (

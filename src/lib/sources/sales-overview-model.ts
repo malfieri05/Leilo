@@ -6,7 +6,7 @@ export type ChannelKey = (typeof channelKeys)[number];
 export const regionKeys = ["nationwide", "california", "southeast"] as const;
 export type RegionKey = (typeof regionKeys)[number];
 
-export const rangeKeys = ["mtd", "ytd", "ytd-vs", "custom", "all"] as const;
+export const rangeKeys = ["mtd", "ytd", "ytd-vs", "all", "custom"] as const;
 export type RangeKey = (typeof rangeKeys)[number];
 
 export const segmentKeys = ["industry", "customer"] as const;

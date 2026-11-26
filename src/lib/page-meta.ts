@@ -29,13 +29,13 @@ const pages: { href: string; title: string; description: string }[] = [
   },
   {
     href: "/brand",
-    title: "Leilo Brand Kit / Marketing Materials",
+    title: "Marketing Kit",
     description:
       "The files the sales team hands a buyer. This shelf is for assets, not orders. Each section opens the live Google Drive folder or file the marketing team maintains.",
   },
   {
     href: "/skus",
-    title: "SKU Data / Information",
+    title: "SKU info",
     description:
       "The B2B master price list: pack counts, UPCs, and FOB, delivered, and DSD prices. Supplement facts panels come later.",
   },
@@ -52,7 +52,7 @@ const pages: { href: string; title: string; description: string }[] = [
   },
   {
     href: "/locator",
-    title: "Auto-Updating Store Locator",
+    title: "Store list",
     description:
       "Live doors from the company Leilo locations Google Sheet. Region comes from the retailer address; map pins need coordinates.",
   },

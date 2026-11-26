@@ -5,7 +5,7 @@ import { Panel } from "@/components/panel";
 import { SkusView } from "@/components/skus-view";
 import { loadSkuCatalog } from "@/lib/sources/sku-overview";
 
-export const metadata: Metadata = { title: "SKU data" };
+export const metadata: Metadata = { title: "SKU info" };
 
 export default function SkusPage() {
   return (

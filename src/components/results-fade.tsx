@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-export function SalesResultsFade({ children }: { children: ReactNode }) {
+export function ResultsFade({ children }: { children: ReactNode }) {
   const latest = useRef(children);
   const displayed = useRef(children);
   latest.current = children;

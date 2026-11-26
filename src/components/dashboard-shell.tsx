@@ -177,7 +177,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <SidebarToggle collapsed={desktopCollapsed} onToggle={toggleCollapsed} className="hidden md:flex" />
               </div>
               <p className="mt-1 text-xs uppercase tracking-[0.18em] text-lime">Sales HQ</p>
-              <p className="mt-2 text-sm text-paper/70">Internal · Head of Sales</p>
+              <p className="mt-2 text-sm text-paper/70">Head of Sales</p>
             </div>
           )}
         </div>
@@ -273,10 +273,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               </div>
-
-              <p className="mt-6 px-2 pb-3 text-xs text-paper/45">
-                Sample cards stay labeled until a source has data.
-              </p>
             </>
           )}
         </nav>
@@ -298,9 +294,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <PlatformTitle />
             </Suspense>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden rounded-full bg-lime/70 px-3 py-1 text-lagoon-deep sm:inline">Mock data</span>
-            <span className="text-muted">Head of Sales</span>
+          <div className="flex items-center">
+            <button
+              type="button"
+              aria-label="Account"
+              title="Profile sign-in coming soon"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-sand text-muted transition-colors hover:border-heading/30 hover:text-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z" />
+              </svg>
+            </button>
           </div>
         </header>
 
