@@ -57,6 +57,8 @@ export type TierAccount = {
   id: string;
   name: string;
   revenue: number;
+  industryType?: string | null;
+  customerType?: string | null;
 };
 
 export type TierBand = {

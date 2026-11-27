@@ -2,8 +2,10 @@ import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, ty
 import {
   hubspotIndustryCte,
   hubspotIndustryJoin,
+  resolvedCustomerSql,
   resolvedIndustrySql,
 } from "@/lib/sources/direct-model";
+import { accountEnrichmentStats } from "@/lib/sources/accounts";
 import { NON_REVENUE_TAG_REGEX } from "@/lib/sources/revenue-classification";
 import { excludeDistributorAccountSql } from "@/lib/sources/sales-to-registry";
 import { REVENUE_ORDER_SOURCE } from "@/lib/sources/revenue";
@@ -74,6 +76,12 @@ export type SalesOverview =
       tiers: TierBand[];
       segmentOptions: string[];
       industry: IndustryRow[];
+      enrichment: {
+        shopifyAccounts: number;
+        hubspotMatched: number;
+        withIndustry: number;
+        needsType: number;
+      } | null;
     };
 
 export type IndustryRow = {
@@ -99,8 +107,19 @@ export async function loadSalesOverview(
   try {
     await ensureSchema();
     const organizationId = await leiloOrganizationId(sql);
-    const [methodRows, everRows, skuRows, healthRows, prospectCount, orderedCount, tierRows, industryAccounts, industryRevenue, blank] =
-      await Promise.all([
+    const [
+      methodRows,
+      everRows,
+      skuRows,
+      healthRows,
+      prospectCount,
+      orderedCount,
+      tierRows,
+      industryAccounts,
+      industryRevenue,
+      blank,
+      enrichment,
+    ] = await Promise.all([
         methodTotals(sql, organizationId, query, period),
         everLanded(sql, organizationId),
         skuTotals(sql, organizationId, query, period),
@@ -111,6 +130,7 @@ export async function loadSalesOverview(
         industryAccountCounts(sql, organizationId, query),
         industryRevenueTotals(sql, organizationId, query, period),
         blankIndustry(sql, organizationId, query),
+        accountEnrichmentStats(sql, organizationId),
       ]);
 
     const cohort = query.cohort
@@ -158,9 +178,18 @@ export async function loadSalesOverview(
         twoYearRecent: healthRows.twoYearRecent,
       },
       cohort,
-      tiers: assignTiers(segmented.map((account) => ({ id: account.id, name: account.name, revenue: account.revenue }))),
+      tiers: assignTiers(
+        segmented.map((account) => ({
+          id: account.id,
+          name: account.name,
+          revenue: account.revenue,
+          industryType: account.industryType,
+          customerType: account.customerType,
+        })),
+      ),
       segmentOptions: options,
       industry: mergeIndustry(industryAccounts, industryRevenue, blank),
+      enrichment: enrichment.state === "ready" ? enrichment : null,
     };
   } catch (error) {
     return { state: "error", message: publicError(error) };
@@ -289,8 +318,10 @@ async function prospectTotal(sql: Sql, organizationId: string, query: SalesQuery
   const region = accountRegion(query.region, params);
   const result = rows(
     await sql.query(
-      `SELECT COUNT(*)::int AS count
+      `WITH ${hubspotIndustryCte()}
+       SELECT COUNT(*)::int AS count
        FROM accounts a
+       ${hubspotIndustryJoin()}
        WHERE a.organization_id = $1
          ${region}
          AND ${prospectPredicate()}`,
@@ -333,7 +364,7 @@ async function tierAccounts(sql: Sql, organizationId: string, query: SalesQuery,
          a.id::text AS id,
          a.name,
          NULLIF(btrim(${resolvedIndustrySql()}), '') AS industry_type,
-         COALESCE(NULLIF(btrim(a.customer_type), ''), NULLIF(btrim(h.customer_type), ''), '') AS customer_type,
+         NULLIF(btrim(${resolvedCustomerSql()}), '') AS customer_type,
          SUM(o.revenue) AS revenue
        FROM orders o
        JOIN accounts a ON a.id = o.account_id
@@ -405,20 +436,27 @@ async function industryRevenueTotals(sql: Sql, organizationId: string, query: Sa
 async function blankIndustry(sql: Sql, organizationId: string, query: SalesQuery) {
   const params: unknown[] = [organizationId];
   const region = accountRegion(query.region, params);
+  const needsType = `NULLIF(btrim(${resolvedIndustrySql()}), '') IS NULL`;
   const [countRows, nameRows] = await Promise.all([
     sql.query(
-      `SELECT COUNT(*)::int AS count
+      `WITH ${hubspotIndustryCte()}
+       SELECT COUNT(*)::int AS count
        FROM accounts a
+       ${hubspotIndustryJoin()}
        WHERE a.organization_id = $1
-         AND (industry_type IS NULL OR btrim(industry_type) = '')
+         AND a.source = 'shopify'
+         AND ${needsType}
          ${region}`,
       params,
     ),
     sql.query(
-      `SELECT a.id::text AS id, a.name
+      `WITH ${hubspotIndustryCte()}
+       SELECT a.id::text AS id, a.name
        FROM accounts a
+       ${hubspotIndustryJoin()}
        WHERE a.organization_id = $1
-         AND (industry_type IS NULL OR btrim(industry_type) = '')
+         AND a.source = 'shopify'
+         AND ${needsType}
          ${region}
        ORDER BY a.name
        LIMIT ${NAME_LIMIT}`,
@@ -513,8 +551,10 @@ async function prospectNames(sql: Sql, organizationId: string, query: SalesQuery
   const region = accountRegion(query.region, params);
   return rows(
     await sql.query(
-      `SELECT a.id::text AS id, a.name
+      `WITH ${hubspotIndustryCte()}
+       SELECT a.id::text AS id, a.name
        FROM accounts a
+       ${hubspotIndustryJoin()}
        WHERE a.organization_id = $1
          ${region}
          AND ${prospectPredicate()}
@@ -623,7 +663,7 @@ function prospectPredicate() {
       AND o.ship_date IS NOT NULL
   )
   AND (
-    a.customer_type ILIKE '%prospect%'
+    (${resolvedCustomerSql()}) ILIKE '%prospect%'
     OR EXISTS (
       SELECT 1 FROM orders s
       WHERE s.account_id = a.id

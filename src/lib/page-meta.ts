@@ -82,7 +82,8 @@ const pages: { href: string; title: string; description: string }[] = [
   {
     href: "/accounts",
     title: "Accounts",
-    description: "Companies synced from HubSpot. Ordering method and industry come from the company properties.",
+    description:
+      "Shopify billing accounts enriched with HubSpot Industry Type, Customer Type, and ordering method when company names match.",
   },
   {
     href: "/products",

@@ -1,4 +1,4 @@
-import { blankToNull } from "@/lib/sources/fields";
+import { blankToNull, normalizeAccountName } from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
 import { classifyShopifyWholesaleOrder } from "@/lib/sources/revenue-classification";
 import type { PullResult } from "@/lib/sources/types";
@@ -98,7 +98,9 @@ export async function pullShopify(): Promise<PullResult> {
 function accountFrom(order: ShopifyOrder) {
   const customer = order.customer;
   if (!customer?.id) return null;
-  const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.email;
+  const company = normalizeAccountName(order.shipping_address?.company);
+  const person = normalizeAccountName([customer.first_name, customer.last_name].filter(Boolean).join(" "));
+  const name = company || person || normalizeAccountName(customer.email);
   if (!name) return null;
   const address = order.shipping_address;
   return {

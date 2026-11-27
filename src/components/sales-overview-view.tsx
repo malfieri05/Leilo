@@ -58,6 +58,16 @@ export function SalesOverviewView({
             not in these method totals. Re-sync Shopify on Sources after rule changes.
           </p>
         ) : null}
+        {report.enrichment && report.enrichment.shopifyAccounts > 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            HubSpot match: {percent(report.enrichment.hubspotMatched / report.enrichment.shopifyAccounts)} of{" "}
+            {report.enrichment.shopifyAccounts.toLocaleString()} Shopify retailers ·{" "}
+            {report.enrichment.needsType.toLocaleString()} need Industry Type ·{" "}
+            <Link href="/accounts?filter=needs-type" className="font-semibold text-heading underline">
+              Review accounts
+            </Link>
+          </p>
+        ) : null}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -180,7 +190,14 @@ export function SalesOverviewView({
                   <ul className="mt-3 divide-y divide-line">
                     {band.accounts.map((account) => (
                       <li key={account.id} className="flex items-baseline justify-between gap-3 py-2 text-sm">
-                        <span>{account.name}</span>
+                        <span>
+                          {account.name}
+                          {account.industryType || account.customerType ? (
+                            <span className="mt-0.5 block text-xs text-muted">
+                              {[account.industryType, account.customerType].filter(Boolean).join(" · ")}
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="text-muted">{money(account.revenue)}</span>
                       </li>
                     ))}

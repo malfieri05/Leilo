@@ -16,13 +16,22 @@ export function resolvedIndustryType(shopifyIndustry: string | null | undefined,
   return hubspot || "Needs a type";
 }
 
+/** Shopify customer type wins when set; otherwise HubSpot company Type. */
+export function resolvedCustomerType(shopifyType: string | null | undefined, hubspotType: string | null | undefined) {
+  const shopify = shopifyType?.trim() ?? "";
+  if (shopify) return shopify;
+  return hubspotType?.trim() ?? "";
+}
+
 /** One HubSpot company per name. Queries bind the organization as `$1`. */
 export function hubspotIndustryCte() {
   return `hubspot_industry AS (
     SELECT DISTINCT ON (lower(btrim(name)))
       lower(btrim(name)) AS name_key,
+      external_id AS hubspot_external_id,
       NULLIF(btrim(industry_type), '') AS industry_type,
-      NULLIF(btrim(customer_type), '') AS customer_type
+      NULLIF(btrim(customer_type), '') AS customer_type,
+      NULLIF(btrim(ordering_method), '') AS ordering_method
     FROM accounts
     WHERE organization_id = $1
       AND source = 'hubspot'
@@ -36,6 +45,15 @@ export function hubspotIndustryJoin() {
 
 export function resolvedIndustrySql() {
   return `COALESCE(NULLIF(btrim(a.industry_type), ''), NULLIF(btrim(h.industry_type), ''), '')`;
+}
+
+export function resolvedCustomerSql() {
+  return `COALESCE(NULLIF(btrim(a.customer_type), ''), NULLIF(btrim(h.customer_type), ''), '')`;
+}
+
+/** CRM ordering method; revenue method stays on each Shopify order row. */
+export function resolvedOrderingMethodSql() {
+  return `COALESCE(NULLIF(btrim(a.ordering_method), ''), NULLIF(btrim(h.ordering_method), ''), '')`;
 }
 
 export function distributorIndustryPredicate() {

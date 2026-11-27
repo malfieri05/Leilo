@@ -10,6 +10,12 @@ export function blankToNull(value: string | null | undefined) {
   return trimmed ? trimmed : null;
 }
 
+/** Retailer display name for HubSpot name matching (shipping company on B2B orders). */
+export function normalizeAccountName(value: string | null | undefined) {
+  const trimmed = value?.trim().replace(/\s+/g, " ").replace(/[.,;:]+$/g, "") ?? "";
+  return trimmed;
+}
+
 export function money(value: string) {
   const cleaned = value.replace(/[$,\s]/g, "").replace(/^\((.*)\)$/, "-$1");
   if (!cleaned) return null;

@@ -1,6 +1,6 @@
 # Direct tab
 
-Retailers ordering from Leilo. This draft reads Shopify wholesale orders on `leilosupply`. HubSpot companies supply Industry Type when the company name matches the Shopify account. HubSpot orders stay out until they can be deduped against Shopify. Nothing is written back to HubSpot yet.
+Retailers ordering from Leilo. This draft reads Shopify wholesale orders on `leilosupply`. Shopify retailer accounts use the **shipping company** on the order when present (otherwise the buyer name or email). HubSpot companies enrich Industry Type, Customer Type (`type`), and Ordering Method when **`lower(trim(shopify name))` = `lower(trim(hubspot company name))`**. HubSpot orders stay out until they can be deduped against Shopify. Nothing is written back to HubSpot yet.
 
 Do not store HubSpot portal passwords in the repo. The connection uses `HUBSPOT_ACCESS_TOKEN`.
 

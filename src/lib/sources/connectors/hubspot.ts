@@ -1,10 +1,11 @@
-import { blankToNull, isoDate, orderingMethodFromText, saleDirection } from "@/lib/sources/fields";
+import { blankToNull, isoDate, normalizeAccountName, orderingMethodFromText, saleDirection } from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
 import type { PullResult } from "@/lib/sources/types";
 
 const COMPANY_PROPERTIES = [
   "name",
   "industry_type",
+  "type",
   "customer_type",
   "ordering_method",
   "address",
@@ -27,7 +28,7 @@ export async function pullHubSpot(): Promise<PullResult> {
 
   for (const company of companies.rows) {
     const properties = company.properties ?? {};
-    const name = blankToNull(properties.name);
+    const name = blankToNull(normalizeAccountName(properties.name));
     if (!name) continue;
     const methodText = properties.ordering_method;
     result.accounts.push({
@@ -36,7 +37,7 @@ export async function pullHubSpot(): Promise<PullResult> {
       address: blankToNull([properties.address, properties.city, properties.state].filter(Boolean).join(", ")),
       region: blankToNull(properties.state),
       industryType: blankToNull(properties.industry_type),
-      customerType: blankToNull(properties.customer_type),
+      customerType: blankToNull(properties.type) ?? blankToNull(properties.customer_type),
       orderingMethod: blankToNull(methodText),
     });
     result.raw.push({ kind: "reference", externalId: company.id, payload: company });
@@ -78,8 +79,8 @@ export async function pullHubSpot(): Promise<PullResult> {
 
   result.rowCount = result.accounts.length + result.orders.length;
   const industryNote = companies.droppedIndustry
-    ? " industry_type, customer_type, or ordering_method is not a company property yet, so those fields were left blank."
-    : " Industry Type was read from industry_type, not the default Industry field.";
+    ? " industry_type, type, or ordering_method is not a company property yet, so those fields were left blank."
+    : " Industry Type from industry_type; Customer Type from type (not the default Industry field).";
   result.message = `HubSpot returned ${result.accounts.length} companies. ${orderNote}${industryNote}`;
   return result;
 }

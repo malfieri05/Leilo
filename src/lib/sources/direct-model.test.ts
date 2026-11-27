@@ -5,6 +5,7 @@ import {
   directOrderPredicate,
   distributorIndustryPredicate,
   isDirectDistributorIndustry,
+  resolvedCustomerType,
   resolvedIndustryType,
   warehouseAccountSql,
 } from "@/lib/sources/direct-model";
@@ -24,6 +25,12 @@ describe("Direct industry", () => {
     assert.equal(resolvedIndustryType("Smoke Shop", "Grocery"), "Smoke Shop");
     assert.equal(resolvedIndustryType("  ", "Kava Bars"), "Kava Bars");
     assert.equal(resolvedIndustryType(null, "  "), "Needs a type");
+  });
+
+  it("uses the Shopify customer type, then HubSpot type", () => {
+    assert.equal(resolvedCustomerType("Prospect", "Mature Customer"), "Prospect");
+    assert.equal(resolvedCustomerType(null, "Past Customer"), "Past Customer");
+    assert.equal(resolvedCustomerType("", ""), "");
   });
 
   it("drops warehouse names only outside Nationwide", () => {

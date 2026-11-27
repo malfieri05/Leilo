@@ -27,8 +27,12 @@ Canonical Shopify wholesale rules live in `src/lib/sources/revenue-classificatio
 
 ## Sales Overview enrichment
 
-- **Industry Type / Customer Type:** Shopify account first, then HubSpot company matched by name (same pattern as Direct).
+- **Shopify account name:** `shipping_address.company` when set; else buyer name; else email. Normalized on ingest for HubSpot name matching.
+- **Industry Type / Customer Type:** Shopify account fields first, then HubSpot company on name match. Customer Type reads HubSpot property **`type`** (not the standard Industry field).
+- **Ordering method on each order** stays Shopify classification. HubSpot **Ordering Method** on the company is display-only on Accounts and tiers.
 - **Account health cohorts:** Retailer accounts only; KEHE, UNFI, and DSD partner names from the registry are excluded.
+
+Re-sync **Shopify** after deploy so account names align with shipping companies, then re-sync **HubSpot** for industry and type.
 
 ## Non-revenue tags (documented)
 
