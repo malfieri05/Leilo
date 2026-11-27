@@ -7,7 +7,7 @@ import { PlatformTitle } from "@/components/platform-title";
 import { primaryNav, workspaceNav } from "@/lib/nav";
 
 const STORAGE_KEY = "leilo-sidebar-collapsed";
-const EXPANDED_WIDTH = "16rem";
+const EXPANDED_WIDTH = "13.5rem";
 const COLLAPSED_WIDTH = "4.25rem";
 
 function isActive(pathname: string, href: string) {
@@ -125,15 +125,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const desktopCollapsed = ready && collapsed;
+  const sidebarWidth = desktopCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
 
   return (
     <div
       className="min-h-full bg-foam text-ink"
-      style={
-        {
-          "--sidebar-width": desktopCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-        } as React.CSSProperties
-      }
+      suppressHydrationWarning
+      style={{ "--sidebar-width": sidebarWidth } as React.CSSProperties}
     >
       <a
         href="#main"
@@ -152,11 +150,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col overflow-hidden bg-lagoon text-paper transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:translate-x-0 ${
-          mobileOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
-        } md:!w-[var(--sidebar-width)]`}
+        className={`ark-chrome-nav bg-slate-deep fixed inset-y-0 left-0 z-40 flex w-[var(--sidebar-width)] flex-col overflow-hidden text-paper transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         aria-label="Main navigation"
         data-collapsed={desktopCollapsed ? "true" : "false"}
+        suppressHydrationWarning
       >
         <div
           className={`shrink-0 border-b border-white/10 transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
@@ -279,19 +278,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:pl-[var(--sidebar-width)]">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-4 backdrop-blur md:px-8">
+        <header className="ark-platform-header bg-slate-deep sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 px-4 text-paper md:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
-              className="rounded-md border border-line px-2.5 py-1.5 text-sm md:hidden"
+              className="rounded-[10px] border border-white/20 px-2.5 py-1.5 text-sm text-paper/90 transition-colors hover:bg-white/10 hover:text-paper md:hidden"
               onClick={() => setMobileOpen(true)}
               aria-expanded={mobileOpen}
               aria-controls="primary-nav"
             >
               Menu
             </button>
-            <Suspense fallback={<span className="inline-block h-7 w-36 animate-pulse rounded-md bg-sand" />}>
-              <PlatformTitle />
+            <Suspense fallback={<span className="inline-block h-7 w-36 animate-pulse rounded-md bg-white/10" />}>
+              <PlatformTitle onDark />
             </Suspense>
           </div>
           <div className="flex items-center">
@@ -299,7 +298,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               type="button"
               aria-label="Account"
               title="Profile sign-in coming soon"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-sand text-muted transition-colors hover:border-heading/30 hover:text-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-paper/80 transition-colors hover:bg-white/10 hover:text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z" />

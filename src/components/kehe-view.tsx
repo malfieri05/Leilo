@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
+import { ScrollRegion } from "@/components/scroll-region";
 import type { KeheOverview, KeheStockCell } from "@/lib/sources/kehe-overview";
 import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 import type { StockFlag } from "@/lib/sources/kehe-stock-flags";
 
-const SKU_PREVIEW = 8;
-
 export function KeheView({ report, period }: { report: Extract<KeheOverview, { state: "ready" }>; period: ResolvedPeriod }) {
-  const preview = report.skus.slice(0, SKU_PREVIEW);
-  const rest = report.skus.slice(SKU_PREVIEW);
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
 
   return (
@@ -50,17 +47,9 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
           {report.skus.length === 0 ? (
             <EmptySales />
           ) : (
-            <>
-              <SkuTable rows={preview} />
-              {rest.length > 0 ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-heading">Other SKUs ({rest.length})</summary>
-                  <div className="mt-3">
-                    <SkuTable rows={rest} />
-                  </div>
-                </details>
-              ) : null}
-            </>
+            <ScrollRegion>
+              <SkuTable rows={report.skus} />
+            </ScrollRegion>
           )}
         </Panel>
         <Panel title="KEHE Revenue by Product Type" action={period.label}>
@@ -83,7 +72,9 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
         {report.skus.length === 0 ? (
           <EmptySales />
         ) : (
-          <SkuTable rows={report.skus.slice(0, 12)} pods />
+          <ScrollRegion>
+            <SkuTable rows={report.skus} pods />
+          </ScrollRegion>
         )}
       </Panel>
 
@@ -91,7 +82,7 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
         {report.industry.length === 0 ? (
           <EmptySales />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion tall>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">
                 <tr>
@@ -112,7 +103,7 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </Panel>
 
@@ -124,7 +115,8 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
               : "Upload Chains and Stores with cases ordered and cases shipped to see short ships."}
           </p>
         ) : (
-          <ul className="divide-y divide-line text-sm">
+          <ScrollRegion>
+            <ul className="divide-y divide-line text-sm">
             {report.shortShips.map((row) => (
               <li key={row.name} className="flex items-baseline justify-between gap-3 py-2">
                 <span className="font-medium">{row.name}</span>
@@ -133,7 +125,8 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
                 </span>
               </li>
             ))}
-          </ul>
+            </ul>
+          </ScrollRegion>
         )}
       </Panel>
 
@@ -154,21 +147,21 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
             <StockLegend />
             <StockGrid cells={report.stock} />
             {report.nearMisses.length > 0 ? (
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-semibold text-heading">
-                  Near misses ({report.nearMisses.length})
-                </summary>
-                <p className="mt-2 text-sm text-muted">
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-heading">Near misses ({report.nearMisses.length})</p>
+                <p className="mt-1 text-sm text-muted">
                   These SKUs meet the sales-order test, but neither weeks figure is above 8, so they are not green.
                 </p>
-                <ul className="mt-2 divide-y divide-line text-sm">
-                  {report.nearMisses.slice(0, 20).map((cell) => (
-                    <li key={`${cell.dcCode}-${cell.upc}`} className="py-2">
-                      {cell.dcName} · {cell.description || cell.upc}
-                    </li>
-                  ))}
-                </ul>
-              </details>
+                <ScrollRegion className="mt-2">
+                  <ul className="divide-y divide-line text-sm">
+                    {report.nearMisses.map((cell) => (
+                      <li key={`${cell.dcCode}-${cell.upc}`} className="py-2">
+                        {cell.dcName} · {cell.description || cell.upc}
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollRegion>
+              </div>
             ) : null}
           </>
         )}

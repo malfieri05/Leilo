@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
+import { ScrollRegion } from "@/components/scroll-region";
 import type { UnfiOverview } from "@/lib/sources/unfi-overview";
 import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 
-const SKU_PREVIEW = 8;
-
 export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { state: "ready" }>; period: ResolvedPeriod }) {
-  const preview = report.skus.slice(0, SKU_PREVIEW);
-  const rest = report.skus.slice(SKU_PREVIEW);
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
 
   return (
@@ -39,17 +36,9 @@ export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { s
           {report.skus.length === 0 ? (
             <EmptySales />
           ) : (
-            <>
-              <SkuTable rows={preview} />
-              {rest.length > 0 ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-heading">Other SKUs ({rest.length})</summary>
-                  <div className="mt-3">
-                    <SkuTable rows={rest} />
-                  </div>
-                </details>
-              ) : null}
-            </>
+            <ScrollRegion>
+              <SkuTable rows={report.skus} />
+            </ScrollRegion>
           )}
         </Panel>
         <Panel title="UNFI Revenue by Product Type" action={period.label}>
@@ -69,14 +58,20 @@ export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { s
       </div>
 
       <Panel title="UNFI PODs by SKU" action={period.label}>
-        {report.skus.length === 0 ? <EmptySales /> : <SkuTable rows={report.skus.slice(0, 12)} pods />}
+        {report.skus.length === 0 ? (
+          <EmptySales />
+        ) : (
+          <ScrollRegion>
+            <SkuTable rows={report.skus} pods />
+          </ScrollRegion>
+        )}
       </Panel>
 
       <Panel title="UNFI Revenue by Industry Type" action={period.label}>
         {report.industry.length === 0 ? (
           <EmptySales />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion tall>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">
                 <tr>
@@ -97,7 +92,7 @@ export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { s
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </Panel>
     </div>

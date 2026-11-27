@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
+import { ScrollRegion } from "@/components/scroll-region";
 import { DSD_PARTNERS } from "@/lib/sources/dsd/partners";
 import type { DsdOverview } from "@/lib/sources/dsd-overview";
 import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
-
-const SKU_PREVIEW = 8;
 
 export function DsdView({
   report,
@@ -16,8 +15,6 @@ export function DsdView({
   period: ResolvedPeriod;
   partner: string | null;
 }) {
-  const preview = report.skus.slice(0, SKU_PREVIEW);
-  const rest = report.skus.slice(SKU_PREVIEW);
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
   const hasSales = report.revenue > 0 || report.distributors.length > 0;
 
@@ -47,7 +44,8 @@ export function DsdView({
         {report.distributors.length === 0 ? (
           <p className="text-sm text-muted">No through-partner revenue in this period.</p>
         ) : (
-          <ul className="divide-y divide-line text-sm">
+          <ScrollRegion>
+            <ul className="divide-y divide-line text-sm">
             {report.distributors.map((row) => (
               <li key={row.slug} className="flex items-baseline justify-between gap-3 py-2">
                 <span className="font-medium">{row.label}</span>
@@ -57,7 +55,8 @@ export function DsdView({
                 </span>
               </li>
             ))}
-          </ul>
+            </ul>
+          </ScrollRegion>
         )}
       </Panel>
 
@@ -66,17 +65,9 @@ export function DsdView({
           {report.skus.length === 0 ? (
             <Empty />
           ) : (
-            <>
-              <SkuTable rows={preview} pods />
-              {rest.length > 0 ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-heading">Other SKUs ({rest.length})</summary>
-                  <div className="mt-3">
-                    <SkuTable rows={rest} pods />
-                  </div>
-                </details>
-              ) : null}
-            </>
+            <ScrollRegion>
+              <SkuTable rows={report.skus} pods />
+            </ScrollRegion>
           )}
         </Panel>
         <Panel title="DSD Revenue by Product Type" action={period.label}>
@@ -99,7 +90,7 @@ export function DsdView({
         {report.industry.length === 0 ? (
           <Empty />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion tall>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">
                 <tr>
@@ -120,16 +111,22 @@ export function DsdView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </Panel>
 
       <Panel title="DSD PODs by SKU" action={period.label}>
-        {report.skus.length === 0 ? <Empty /> : <SkuTable rows={report.skus.slice(0, 12)} pods />}
+        {report.skus.length === 0 ? (
+          <Empty />
+        ) : (
+          <ScrollRegion>
+            <SkuTable rows={report.skus} pods />
+          </ScrollRegion>
+        )}
       </Panel>
 
       <Panel title="How reports arrive" action="Upload on Sources">
-        <div className="overflow-x-auto">
+        <ScrollRegion tall>
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.12em] text-muted">
               <tr>
@@ -148,7 +145,7 @@ export function DsdView({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">

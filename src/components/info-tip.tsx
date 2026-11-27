@@ -2,15 +2,18 @@
 
 import { useId } from "react";
 
-export function InfoTip({ text }: { text: string }) {
+export function InfoTip({ text, onDark = false }: { text: string; onDark?: boolean }) {
   const tipId = useId();
+  const triggerClass = onDark
+    ? "border-white/25 text-paper/70 hover:border-lime hover:text-lime focus-visible:border-lime focus-visible:text-lime focus-visible:outline-lime"
+    : "border-line text-muted hover:border-heading hover:text-heading focus-visible:border-heading focus-visible:text-heading focus-visible:outline-sky";
   return (
     <span className="group relative inline-flex shrink-0">
       <button
         type="button"
         aria-describedby={tipId}
         aria-label="About this view"
-        className="flex h-5 w-5 items-center justify-center rounded-full border border-line text-[11px] font-semibold italic leading-none text-muted transition-colors hover:border-heading hover:text-heading focus-visible:border-heading focus-visible:text-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+        className={`flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-semibold italic leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${triggerClass}`}
       >
         i
       </button>

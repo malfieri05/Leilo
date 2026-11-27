@@ -59,7 +59,7 @@ function ResultsPlaceholder() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden>
       {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="h-28 animate-pulse rounded-[10px] bg-paper ring-1 ring-line" />
+        <div key={index} className="ark-surface h-28 animate-pulse bg-paper/80" />
       ))}
     </div>
   );

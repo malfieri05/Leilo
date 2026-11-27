@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
+import { ScrollRegion } from "@/components/scroll-region";
 import type { DirectOverview } from "@/lib/sources/direct-overview";
 import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
-
-const SKU_PREVIEW = 8;
 
 export function DirectView({
   report,
@@ -13,8 +12,6 @@ export function DirectView({
   report: Extract<DirectOverview, { state: "ready" }>;
   period: ResolvedPeriod;
 }) {
-  const preview = report.skus.slice(0, SKU_PREVIEW);
-  const rest = report.skus.slice(SKU_PREVIEW);
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
 
   return (
@@ -43,15 +40,13 @@ export function DirectView({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Direct Revenue by SKU" action={period.label}>
-          {report.skus.length === 0 ? <Empty /> : <SkuTable rows={preview} pods />}
-          {rest.length > 0 ? (
-            <details className="mt-3">
-              <summary className="cursor-pointer text-sm font-semibold text-heading">Other SKUs ({rest.length})</summary>
-              <div className="mt-3">
-                <SkuTable rows={rest} pods />
-              </div>
-            </details>
-          ) : null}
+          {report.skus.length === 0 ? (
+            <Empty />
+          ) : (
+            <ScrollRegion>
+              <SkuTable rows={report.skus} pods />
+            </ScrollRegion>
+          )}
         </Panel>
         <Panel title="Direct Revenue by Product Type" action={period.label}>
           {families.every((family) => family.revenue === 0) ? (
@@ -73,7 +68,7 @@ export function DirectView({
         {report.industry.length === 0 ? (
           <Empty />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion tall>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">
                 <tr>
@@ -94,12 +89,18 @@ export function DirectView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </Panel>
 
       <Panel title="Direct PODs by SKU" action={period.label}>
-        {report.skus.length === 0 ? <Empty /> : <SkuTable rows={report.skus.slice(0, 12)} pods />}
+        {report.skus.length === 0 ? (
+          <Empty />
+        ) : (
+          <ScrollRegion>
+            <SkuTable rows={report.skus} pods />
+          </ScrollRegion>
+        )}
       </Panel>
     </div>
   );

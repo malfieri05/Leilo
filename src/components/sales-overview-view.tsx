@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
+import { ScrollRegion } from "@/components/scroll-region";
 import { SegmentControls } from "@/components/sales-filters";
 import type { AccountName, MethodCard, SalesOverview } from "@/lib/sources/sales-overview";
 import {
@@ -13,8 +14,6 @@ import {
   type SalesQuery,
 } from "@/lib/sources/sales-overview-model";
 
-const SKU_PREVIEW = 8;
-
 export function SalesOverviewView({
   query,
   period,
@@ -26,9 +25,6 @@ export function SalesOverviewView({
 }) {
   const orderCount = report.methods.reduce((sum, method) => sum + method.orders, 0);
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
-  const preview = report.skus.slice(0, SKU_PREVIEW);
-  const rest = report.skus.slice(SKU_PREVIEW);
-
   return (
     <div className="flex flex-col gap-4">
       <section aria-label="Revenue">
@@ -79,19 +75,9 @@ export function SalesOverviewView({
                 : "No revenue in this period."}
             </p>
           ) : (
-            <>
-              <SkuTable rows={preview} total={report.lineRevenue} />
-              {rest.length > 0 ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-heading">
-                    Other SKUs ({rest.length})
-                  </summary>
-                  <div className="mt-3">
-                    <SkuTable rows={rest} total={report.lineRevenue} />
-                  </div>
-                </details>
-              ) : null}
-            </>
+            <ScrollRegion>
+              <SkuTable rows={report.skus} total={report.lineRevenue} />
+            </ScrollRegion>
           )}
         </Panel>
         <Panel title="Revenue by product type" action={period.label}>
@@ -160,7 +146,9 @@ export function SalesOverviewView({
         {query.cohort && report.cohort ? (
           <div className="mt-4" id="accounts">
             <Panel title={cohortTitle(query.cohort)} action={`${report.cohort.total.toLocaleString()} accounts`}>
-              <AccountList names={report.cohort.names} total={report.cohort.total} />
+              <ScrollRegion>
+                <AccountList names={report.cohort.names} total={report.cohort.total} />
+              </ScrollRegion>
             </Panel>
           </div>
         ) : null}
@@ -177,7 +165,7 @@ export function SalesOverviewView({
         ) : (
           <div className="flex flex-col gap-3">
             {report.tiers.map((band) => (
-              <details key={band.id} className="rounded-[10px] border border-line px-4 py-3">
+              <details key={band.id} className="ark-surface px-4 py-3">
                 <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-3">
                   <span className="font-medium">{band.label}</span>
                   <span className="text-sm text-muted">
@@ -187,7 +175,8 @@ export function SalesOverviewView({
                 {band.accounts.length === 0 ? (
                   <p className="mt-3 text-sm text-muted">None in this band.</p>
                 ) : (
-                  <ul className="mt-3 divide-y divide-line">
+                  <ScrollRegion className="mt-3">
+                    <ul className="divide-y divide-line">
                     {band.accounts.map((account) => (
                       <li key={account.id} className="flex items-baseline justify-between gap-3 py-2 text-sm">
                         <span>
@@ -201,7 +190,8 @@ export function SalesOverviewView({
                         <span className="text-muted">{money(account.revenue)}</span>
                       </li>
                     ))}
-                  </ul>
+                    </ul>
+                  </ScrollRegion>
                 )}
               </details>
             ))}
@@ -213,7 +203,7 @@ export function SalesOverviewView({
         {report.industry.length === 0 ? (
           <p className="text-sm text-muted">No accounts in this view.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion tall>
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.12em] text-muted">
                 <tr>
@@ -229,14 +219,14 @@ export function SalesOverviewView({
                     <td className="py-3 font-medium">
                       {row.type}
                       {row.blankTotal > 0 ? (
-                        <details className="mt-2 font-normal">
-                          <summary className="cursor-pointer text-sm font-semibold text-heading">
-                            Accounts missing a type
-                          </summary>
-                          <div className="mt-2">
+                        <div className="mt-2 font-normal">
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                            Accounts missing a type ({row.blankTotal.toLocaleString()})
+                          </p>
+                          <ScrollRegion compact className="mt-1">
                             <AccountList names={row.blankNames} total={row.blankTotal} />
-                          </div>
-                        </details>
+                          </ScrollRegion>
+                        </div>
                       ) : null}
                     </td>
                     <td className="py-3">{row.accounts.toLocaleString()}</td>
@@ -246,7 +236,7 @@ export function SalesOverviewView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </Panel>
     </div>
@@ -270,7 +260,7 @@ function CohortCard({
     <Link
       href={href}
       aria-current={open ? "true" : undefined}
-      className={`block rounded-[10px] ${open ? "ring-2 ring-sky" : ""}`}
+      className={`block rounded-[10px] transition-[transform,box-shadow] duration-200 ${open ? "ring-2 ring-sky ring-offset-2 ring-offset-cream" : ""}`}
     >
       <KpiCard label={cohortTitle(id)} value={value} delta={delta} tone="flat" />
     </Link>
@@ -279,7 +269,6 @@ function CohortCard({
 
 function SkuTable({ rows, total }: { rows: { sku: string; revenue: number }[]; total: number }) {
   return (
-    <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead className="text-xs uppercase tracking-[0.12em] text-muted">
           <tr>
@@ -298,7 +287,6 @@ function SkuTable({ rows, total }: { rows: { sku: string; revenue: number }[]; t
           ))}
         </tbody>
       </table>
-    </div>
   );
 }
 
@@ -306,7 +294,7 @@ function AccountList({ names, total }: { names: AccountName[]; total: number }) 
   if (names.length === 0) return <p className="text-sm text-muted">No accounts in this group.</p>;
   return (
     <>
-      <ul className="max-h-64 divide-y divide-line overflow-y-auto">
+      <ul className="divide-y divide-line">
         {names.map((account) => (
           <li key={account.id} className="py-2 text-sm">
             {account.name}
