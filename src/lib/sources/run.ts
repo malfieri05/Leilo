@@ -32,7 +32,7 @@ import {
   type SpinsPeriodWeeks,
   type SpinsReportKind,
 } from "@/lib/sources/spins-model";
-import type { PullResult, SyncState } from "@/lib/sources/types";
+import type { PullResult, SyncResult, SyncState } from "@/lib/sources/types";
 
 const pullers: Record<string, () => Promise<PullResult>> = {
   shopify: pullShopify,
@@ -43,7 +43,7 @@ const pullers: Record<string, () => Promise<PullResult>> = {
   spins: pullSpins,
 };
 
-export async function runConnector(source: string): Promise<SyncState> {
+export async function runConnector(source: string): Promise<SyncResult> {
   const spec = specFor(source);
   if (!spec || (spec.kind === "file" && !(source === "dsd" && dsdDriveLive()))) {
     return { ok: false, message: "That source takes a file, not an API sync." };
@@ -75,7 +75,7 @@ export async function runConnector(source: string): Promise<SyncState> {
   return execute(source, "", spec.method, pull);
 }
 
-async function syncGoogleSheetsBundle(method: string): Promise<SyncState> {
+async function syncGoogleSheetsBundle(method: string): Promise<SyncResult> {
   const parts: string[] = [];
   let ok = true;
   const hub = await execute("google_sheets", "", method, pullGoogleSheets);
@@ -97,7 +97,7 @@ async function syncGoogleSheetsBundle(method: string): Promise<SyncState> {
   return { ok, message: parts.join(" ") };
 }
 
-async function syncDsdFromDrive(method: string): Promise<SyncState> {
+async function syncDsdFromDrive(method: string): Promise<SyncResult> {
   try {
     const jobs = await planDsdDriveJobs();
     if (jobs.length === 0) {
@@ -126,7 +126,7 @@ async function syncDsdFromDrive(method: string): Promise<SyncState> {
   }
 }
 
-async function syncSpinsFromDrive(method: string): Promise<SyncState> {
+async function syncSpinsFromDrive(method: string): Promise<SyncResult> {
   try {
     const jobs = await planSpinsDriveJobs();
     if (jobs.length === 0) {
@@ -169,7 +169,7 @@ async function recordSpinsDriveHubRun(method: string, message: string, rowCount:
   }
 }
 
-export async function runConfiguredSources(): Promise<SyncState> {
+export async function runConfiguredSources(): Promise<SyncResult> {
   const ready = sourceCatalog.filter((spec) => spec.kind !== "file" && sourceConfigured(spec) && canApiSync(spec.source));
   if (ready.length === 0) {
     return { ok: false, message: "No API source has credentials yet." };
@@ -178,8 +178,8 @@ export async function runConfiguredSources(): Promise<SyncState> {
   let ok = true;
   for (const spec of ready) {
     const result = await runConnector(spec.source);
-    ok = ok && Boolean(result?.ok);
-    messages.push(`${spec.name}: ${result?.message ?? "No result."}`);
+    ok = ok && result.ok;
+    messages.push(`${spec.name}: ${result.message}`);
   }
   return { ok, message: messages.join(" ") };
 }
@@ -191,7 +191,7 @@ export async function importSourceFile(input: {
   text: string;
   reportKind?: string;
   periodWeeks?: string;
-}): Promise<SyncState> {
+}): Promise<SyncResult> {
   const spec = specFor(input.source);
   if (!spec || spec.kind === "api") {
     return { ok: false, message: "Choose a file source." };
@@ -280,7 +280,7 @@ async function execute(
   partner: string,
   method: string,
   pull: () => Promise<PullResult>,
-): Promise<SyncState> {
+): Promise<SyncResult> {
   const sql = getSql();
   if (!sql) return { ok: false, message: "DATABASE_URL is not set." };
   try {

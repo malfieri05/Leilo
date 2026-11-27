@@ -185,7 +185,10 @@ export type PullResult = {
   storeLocatorDoors?: StoreLocatorDoorDraft[];
 };
 
-export type SyncState = {
+export type SyncResult = {
   ok: boolean;
   message: string;
-} | null;
+};
+
+/** Last sync note on Sources actions; `null` before the first run. */
+export type SyncState = SyncResult | null;
