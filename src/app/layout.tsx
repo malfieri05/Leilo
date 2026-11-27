@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
+import { Suspense } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import "./globals.css";
 
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans">
-        <DashboardShell>{children}</DashboardShell>
+        <DashboardShell>
+          <Suspense fallback={<p className="px-6 py-10 text-sm text-muted">Loading…</p>}>{children}</Suspense>
+        </DashboardShell>
       </body>
     </html>
   );
