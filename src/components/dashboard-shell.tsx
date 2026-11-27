@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { PlatformTitle } from "@/components/platform-title";
+import { ProfileMenu } from "@/components/profile-menu";
 import { primaryNav, workspaceNav } from "@/lib/nav";
 
 const STORAGE_KEY = "leilo-sidebar-collapsed";
@@ -293,18 +294,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <PlatformTitle onDark />
             </Suspense>
           </div>
-          <div className="flex items-center">
-            <button
-              type="button"
-              aria-label="Account"
-              title="Profile sign-in coming soon"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-paper/80 transition-colors hover:bg-white/10 hover:text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z" />
-              </svg>
-            </button>
-          </div>
+          <ProfileMenu />
         </header>
 
         <main id="main" className="px-4 py-6 md:px-8 md:py-8">
