@@ -2,11 +2,20 @@ import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
 import { ScrollRegion } from "@/components/scroll-region";
+import { SalesToThroughPanel } from "@/components/sales-to-through-panel";
 import type { KeheOverview, KeheStockCell } from "@/lib/sources/kehe-overview";
-import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
+import type { RegionKey, ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 import type { StockFlag } from "@/lib/sources/kehe-stock-flags";
 
-export function KeheView({ report, period }: { report: Extract<KeheOverview, { state: "ready" }>; period: ResolvedPeriod }) {
+export function KeheView({
+  report,
+  period,
+  region,
+}: {
+  report: Extract<KeheOverview, { state: "ready" }>;
+  period: ResolvedPeriod;
+  region: RegionKey;
+}) {
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
 
   return (
@@ -41,6 +50,13 @@ export function KeheView({ report, period }: { report: Extract<KeheOverview, { s
           tone="flat"
         />
       </div>
+
+      <SalesToThroughPanel
+        rows={[report.distributorFlow]}
+        period={period}
+        region={region}
+        channelLabel="KEHE"
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="KEHE Revenue by SKU" action={period.label}>

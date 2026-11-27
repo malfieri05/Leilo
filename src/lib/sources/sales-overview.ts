@@ -6,6 +6,7 @@ import {
   resolvedIndustrySql,
 } from "@/lib/sources/direct-model";
 import { accountEnrichmentStats } from "@/lib/sources/accounts";
+import { distributorToThroughRows, type DistributorFlowRow } from "@/lib/sources/sales-to-through";
 import { NON_REVENUE_TAG_REGEX } from "@/lib/sources/revenue-classification";
 import { excludeDistributorAccountSql } from "@/lib/sources/sales-to-registry";
 import { REVENUE_ORDER_SOURCE } from "@/lib/sources/revenue";
@@ -82,6 +83,7 @@ export type SalesOverview =
         withIndustry: number;
         needsType: number;
       } | null;
+      distributorFlows: DistributorFlowRow[];
     };
 
 export type IndustryRow = {
@@ -119,6 +121,7 @@ export async function loadSalesOverview(
       industryRevenue,
       blank,
       enrichment,
+      distributorFlows,
     ] = await Promise.all([
         methodTotals(sql, organizationId, query, period),
         everLanded(sql, organizationId),
@@ -131,6 +134,7 @@ export async function loadSalesOverview(
         industryRevenueTotals(sql, organizationId, query, period),
         blankIndustry(sql, organizationId, query),
         accountEnrichmentStats(sql, organizationId),
+        distributorToThroughRows(sql, organizationId, query.region, period),
       ]);
 
     const cohort = query.cohort
@@ -190,6 +194,7 @@ export async function loadSalesOverview(
       segmentOptions: options,
       industry: mergeIndustry(industryAccounts, industryRevenue, blank),
       enrichment: enrichment.state === "ready" ? enrichment : null,
+      distributorFlows,
     };
   } catch (error) {
     return { state: "error", message: publicError(error) };

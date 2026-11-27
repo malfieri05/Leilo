@@ -1,10 +1,18 @@
-import { blankToNull, isoDate, normalizeAccountName, orderingMethodFromText, saleDirection } from "@/lib/sources/fields";
+import {
+  blankToNull,
+  hubspotResolvedIndustryType,
+  isoDate,
+  normalizeAccountName,
+  orderingMethodFromText,
+  saleDirection,
+} from "@/lib/sources/fields";
 import { emptyPull } from "@/lib/sources/persist";
 import type { PullResult } from "@/lib/sources/types";
 
 const COMPANY_PROPERTIES = [
   "name",
   "industry_type",
+  "industry",
   "type",
   "customer_type",
   "ordering_method",
@@ -36,7 +44,7 @@ export async function pullHubSpot(): Promise<PullResult> {
       name,
       address: blankToNull([properties.address, properties.city, properties.state].filter(Boolean).join(", ")),
       region: blankToNull(properties.state),
-      industryType: blankToNull(properties.industry_type),
+      industryType: hubspotResolvedIndustryType(properties),
       customerType: blankToNull(properties.type) ?? blankToNull(properties.customer_type),
       orderingMethod: blankToNull(methodText),
     });
@@ -80,7 +88,7 @@ export async function pullHubSpot(): Promise<PullResult> {
   result.rowCount = result.accounts.length + result.orders.length;
   const industryNote = companies.droppedIndustry
     ? " industry_type, type, or ordering_method is not a company property yet, so those fields were left blank."
-    : " Industry Type from industry_type; Customer Type from type (not the default Industry field).";
+    : " Industry Type uses industry_type, then standard industry when custom is blank. Customer Type uses type, not HubSpot's default Industry.";
   result.message = `HubSpot returned ${result.accounts.length} companies. ${orderNote}${industryNote}`;
   return result;
 }
@@ -102,7 +110,7 @@ async function listObjects(token: string, object: string, properties: string[]) 
     }
     if (response.status === 400 && activeProperties.some((name) => name === "industry_type")) {
       droppedIndustry = true;
-      activeProperties = ["name", "address", "city", "state"];
+      activeProperties = ["name", "industry", "address", "city", "state"];
       page -= 1;
       continue;
     }

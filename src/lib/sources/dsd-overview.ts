@@ -1,5 +1,6 @@
 import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, type Sql } from "@/lib/db";
 import { hubspotIndustryCte, hubspotIndustryJoin, resolvedIndustrySql } from "@/lib/sources/direct-model";
+import { distributorFlowForChannel, type DistributorFlowRow } from "@/lib/sources/sales-to-through";
 import { dsdThroughPredicate, partnerFilterSql } from "@/lib/sources/dsd-model";
 import { DSD_PARTNERS, partnerLabel } from "@/lib/sources/dsd/partners";
 import {
@@ -32,6 +33,7 @@ export type DsdOverview =
       families: { family: ProductFamily; revenue: number }[];
       industry: { type: string; accounts: number; revenue: number; share: number }[];
       knownPartners: { slug: string; label: string }[];
+      distributorFlow: DistributorFlowRow;
     };
 
 export async function loadDsdOverview(
@@ -46,13 +48,14 @@ export async function loadDsdOverview(
   try {
     await ensureSchema();
     const organizationId = await leiloOrganizationId(sql);
-    const [sales, cuts, distributors, industry, syncs, seen] = await Promise.all([
+    const [sales, cuts, distributors, industry, syncs, seen, distributorFlow] = await Promise.all([
       salesTotals(sql, organizationId, region, period, partner),
       skuCuts(sql, organizationId, region, period, partner),
       distributorTotals(sql, organizationId, region, period, partner),
       industryTotals(sql, organizationId, region, period, partner),
       syncTimes(sql, organizationId),
       seenPartners(sql, organizationId),
+      distributorFlowForChannel(sql, organizationId, "DSD", region, period),
     ]);
     const known = new Map<string, string>(DSD_PARTNERS.map((item) => [item.slug, item.label]));
     for (const slug of seen) {
@@ -69,6 +72,7 @@ export async function loadDsdOverview(
       families: cuts.families,
       industry,
       knownPartners: [...known.entries()].map(([slug, label]) => ({ slug, label })),
+      distributorFlow,
     };
   } catch (error) {
     return { state: "error", message: publicError(error) };

@@ -2,6 +2,7 @@ import { ensureSchema, getSql, hasDatabase, leiloOrganizationId, publicError, ty
 import { industryTotals, salesSyncedAt, salesTotals, skuCuts } from "@/lib/sources/distributor-through-queries";
 import { fillRate, isKeheUpsellSku } from "@/lib/sources/kehe-model";
 import { classifyKeheStockRow, stockIntegrityWarnings, type StockFlag } from "@/lib/sources/kehe-stock-flags";
+import { distributorFlowForChannel, type DistributorFlowRow } from "@/lib/sources/sales-to-through";
 import { addDays, regionStates, type ProductFamily, type RegionKey, type ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 
 export type KeheName = { id: string; name: string };
@@ -48,6 +49,7 @@ export type KeheOverview =
       newAccounts: KeheName[];
       health: { active: number; atRisk: number; past: number; lifetime: number };
       upsells: { name: string; missing: string[] }[];
+      distributorFlow: DistributorFlowRow;
     };
 
 export async function loadKeheOverview(
@@ -62,7 +64,8 @@ export async function loadKeheOverview(
   try {
     await ensureSchema();
     const organizationId = await leiloOrganizationId(sql);
-    const [sales, cuts, fill, industry, salesSync, stockSync, stock, priorStock, growth] = await Promise.all([
+    const [sales, cuts, fill, industry, salesSync, stockSync, stock, priorStock, growth, distributorFlow] =
+      await Promise.all([
       salesTotals(sql, organizationId, "kehe", region, period),
       skuCuts(sql, organizationId, "kehe", region, period),
       fillTotals(sql, organizationId, region, period),
@@ -72,6 +75,7 @@ export async function loadKeheOverview(
       latestStock(sql, organizationId, 0),
       latestStock(sql, organizationId, 1),
       growthSlice(sql, organizationId, region, period, today),
+      distributorFlowForChannel(sql, organizationId, "KEHE", region, period),
     ]);
 
     const stockView = decorateStock(stock, priorStock);
@@ -98,6 +102,7 @@ export async function loadKeheOverview(
       newAccounts: growth.newAccounts,
       health: growth.health,
       upsells: growth.upsells,
+      distributorFlow,
     };
   } catch (error) {
     return { state: "error", message: publicError(error) };

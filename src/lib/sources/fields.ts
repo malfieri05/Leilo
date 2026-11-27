@@ -10,6 +10,11 @@ export function blankToNull(value: string | null | undefined) {
   return trimmed ? trimmed : null;
 }
 
+/** HubSpot company: Weston Industry Type (`industry_type`), then standard `industry` when custom is blank. */
+export function hubspotResolvedIndustryType(properties: Record<string, string | null | undefined>) {
+  return blankToNull(properties.industry_type) ?? blankToNull(properties.industry);
+}
+
 /** Retailer display name for HubSpot name matching (shipping company on B2B orders). */
 export function normalizeAccountName(value: string | null | undefined) {
   const trimmed = value?.trim().replace(/\s+/g, " ").replace(/[.,;:]+$/g, "") ?? "";

@@ -2,10 +2,19 @@ import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
 import { ScrollRegion } from "@/components/scroll-region";
+import { SalesToThroughPanel } from "@/components/sales-to-through-panel";
 import type { UnfiOverview } from "@/lib/sources/unfi-overview";
-import type { ResolvedPeriod } from "@/lib/sources/sales-overview-model";
+import type { RegionKey, ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 
-export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { state: "ready" }>; period: ResolvedPeriod }) {
+export function UnfiView({
+  report,
+  period,
+  region,
+}: {
+  report: Extract<UnfiOverview, { state: "ready" }>;
+  period: ResolvedPeriod;
+  region: RegionKey;
+}) {
   const families = report.families.filter((family) => family.family !== "Unmapped" || family.revenue > 0);
 
   return (
@@ -30,6 +39,13 @@ export function UnfiView({ report, period }: { report: Extract<UnfiOverview, { s
         <KpiCard label="UNFI SKUs Carried" value={count(report.skusCarried)} delta="Distinct SKUs shipped" tone="flat" />
         <KpiCard label="UNFI Total PODs" value={count(report.pods)} delta="Retailer × SKU" tone="flat" />
       </div>
+
+      <SalesToThroughPanel
+        rows={[report.distributorFlow]}
+        period={period}
+        region={region}
+        channelLabel="UNFI"
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="UNFI Revenue by SKU" action={period.label}>

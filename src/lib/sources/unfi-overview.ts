@@ -7,6 +7,7 @@ import {
   type ThroughIndustryRow,
   type ThroughSkuRow,
 } from "@/lib/sources/distributor-through-queries";
+import { distributorFlowForChannel, type DistributorFlowRow } from "@/lib/sources/sales-to-through";
 import type { ProductFamily, RegionKey, ResolvedPeriod } from "@/lib/sources/sales-overview-model";
 
 export type UnfiOverview =
@@ -24,6 +25,7 @@ export type UnfiOverview =
       industry: ThroughIndustryRow[];
       salesSyncedAt: string | null;
       latestShip: string | null;
+      distributorFlow: DistributorFlowRow;
     };
 
 export async function loadUnfiOverview(region: RegionKey, period: ResolvedPeriod): Promise<UnfiOverview> {
@@ -34,11 +36,12 @@ export async function loadUnfiOverview(region: RegionKey, period: ResolvedPeriod
   try {
     await ensureSchema();
     const organizationId = await leiloOrganizationId(sql);
-    const [sales, cuts, industry, synced] = await Promise.all([
+    const [sales, cuts, industry, synced, distributorFlow] = await Promise.all([
       salesTotals(sql, organizationId, "unfi", region, period),
       skuCuts(sql, organizationId, "unfi", region, period),
       industryTotals(sql, organizationId, "unfi", region, period),
       salesSyncedAt(sql, organizationId, "unfi"),
+      distributorFlowForChannel(sql, organizationId, "UNFI", region, period),
     ]);
     return {
       state: "ready",
@@ -52,6 +55,7 @@ export async function loadUnfiOverview(region: RegionKey, period: ResolvedPeriod
       industry,
       salesSyncedAt: synced,
       latestShip: sales.latestShip,
+      distributorFlow,
     };
   } catch (error) {
     return { state: "error", message: publicError(error) };

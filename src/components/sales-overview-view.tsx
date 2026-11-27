@@ -2,6 +2,7 @@ import Link from "next/link";
 import { KpiCard } from "@/components/kpi-card";
 import { Panel } from "@/components/panel";
 import { ScrollRegion } from "@/components/scroll-region";
+import { SalesToThroughPanel } from "@/components/sales-to-through-panel";
 import { SegmentControls } from "@/components/sales-filters";
 import type { AccountName, MethodCard, SalesOverview } from "@/lib/sources/sales-overview";
 import {
@@ -65,6 +66,8 @@ export function SalesOverviewView({
           </p>
         ) : null}
       </section>
+
+      <SalesToThroughPanel rows={report.distributorFlows} period={period} region={query.region} query={query} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Revenue by SKU" action={period.label}>

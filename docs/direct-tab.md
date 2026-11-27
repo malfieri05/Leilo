@@ -8,7 +8,7 @@ Do not store HubSpot portal passwords in the repo. The connection uses `HUBSPOT_
 
 An order is Direct when Shopify classified it as Direct, the direction is direct, it is not excluded, revenue is above zero, and the tags are not sample, POS, or merch. KEHE, UNFI, and DSD invoices are sales to the distributor and stay off this tab.
 
-Industry Type is the Shopify account’s type when it is filled, otherwise the HubSpot company with the same name. A blank on both sides is **Needs a type**. Accounts whose resolved type is Independent Distributor or Regional Distributor are left out.
+Industry Type is the Shopify account’s type when it is filled, otherwise the matched HubSpot company (`industry_type`, then standard `industry` if custom is blank). A blank on both sides is **Needs a type**. Accounts whose resolved type is Independent Distributor or Regional Distributor are left out.
 
 Nationwide includes warehouse accounts whose names contain KEHE or UNFI. California and the Southeast leave those accounts out, matching Sales Overview.
 

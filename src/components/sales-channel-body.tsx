@@ -126,7 +126,7 @@ export async function SalesChannelBody({
         </Panel>
       );
     }
-    return <KeheView report={report} period={period} />;
+    return <KeheView report={report} period={period} region={query.region} />;
   }
 
   if (query.channel === "dsd") {
@@ -146,7 +146,9 @@ export async function SalesChannelBody({
             <p className="text-sm text-hibiscus">{report.message}</p>
           </Panel>
         ) : null}
-        {report.state === "ready" ? <DsdView report={report} period={period} partner={partner} /> : null}
+        {report.state === "ready" ? (
+          <DsdView report={report} period={period} region={query.region} partner={partner} />
+        ) : null}
       </>
     );
   }
@@ -166,7 +168,7 @@ export async function SalesChannelBody({
       </Panel>
     );
   }
-  return <UnfiView report={report} period={period} />;
+  return <UnfiView report={report} period={period} region={query.region} />;
 }
 
 export { compareLabel };
